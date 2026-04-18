@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>icar.com 域名出售 | Domain for Sale</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+        }
+        .lang-switch {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+        .lang-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 6px 12px;
+            margin: 0 4px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .lang-btn:hover, .lang-btn.active {
+            background: rgba(255,255,255,0.4);
+        }
+        .domain {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+        .title {
+            font-size: 28px;
+            margin-bottom: 30px;
+            opacity: 0.95;
+        }
+        .contact {
+            margin: 30px 0;
+            font-size: 20px;
+            line-height: 1.8;
+        }
+        .contact-item {
+            margin: 10px 0;
+        }
+        .note {
+            margin-top: 40px;
+            font-size: 14px;
+            opacity: 0.8;
+            line-height: 1.6;
+        }
+        .en { display: none; }
+    </style>
+</head>
+<body>
+    <div class="lang-switch">
+        <button class="lang-btn active" data-lang="zh">中文</button>
+        <button class="lang-btn" data-lang="en">English</button>
+    </div>
+
+    <div class="container">
+        <!-- 中文内容 -->
+        <div class="zh">
+            <div class="domain">h-icar.com/h-icar.cn</div>
+            <div class="title">此两域名正在出售...</div>
+            <div class="contact">
+                <div class="contact-item">📞 电话：+86-18908349554</div>
+                <div class="contact-item">✉️ 邮箱：495727171@qq.com</div>
+            </div>
+            <div class="note">
+                如您有意收购，请通过以上联系方式与我们洽谈。<br>
+                非诚勿扰，谢谢。
+            </div>
+        </div>
+
+        <!-- 英文内容 -->
+        <div class="en">
+            <div class="domain">h-icar.com/h-icar.cn</div>
+            <div class="title">Two Domain for Sale</div>
+            <div class="contact">
+                <div class="contact-item">📞 Phone: +86-18908349554</div>
+                <div class="contact-item">✉️ Email: 495727171@qq.com</div>
+            </div>
+            <div class="note">
+                If you are interested in purchasing this domain,<br>
+                please contact us using the details above.<br>
+                Serious inquiries only, thank you.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 语言切换功能
+        const btns = document.querySelectorAll('.lang-btn');
+        btns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const lang = btn.getAttribute('data-lang');
+                btns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                document.querySelector('.zh').style.display = lang === 'zh' ? 'block' : 'none';
+                document.querySelector('.en').style.display = lang === 'en' ? 'block' : 'none';
+            });
+        });
+    </script>
+</body>
+</html>
