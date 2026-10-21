@@ -69,12 +69,165 @@
             line-height: 1.6;
         }
         .en { display: none; }
+
+        /* ===== 左上角小组件：日历 + 天气 ===== */
+        .widget-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 10;
+        }
+        .widget-card {
+            width: 250px;
+            background: rgba(255,255,255,0.13);
+            border: 1px solid rgba(255,255,255,0.28);
+            border-radius: 12px;
+            padding: 12px 14px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            text-align: left;
+        }
+        .widget-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 8px;
+            opacity: 0.9;
+        }
+        .cal-nav {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 15px;
+            line-height: 1;
+            padding: 2px 8px;
+            cursor: pointer;
+            border-radius: 4px;
+            opacity: 0.75;
+        }
+        .cal-nav:hover { opacity: 1; background: rgba(255,255,255,0.15); }
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            font-size: 12px;
+            text-align: center;
+        }
+        .cal-grid .cell { padding: 3px 0; border-radius: 6px; }
+        .cal-grid .head { opacity: 0.6; font-size: 11px; padding-bottom: 4px; }
+        .cal-grid .today {
+            background: rgba(255,255,255,0.9);
+            color: #764ba2;
+            font-weight: bold;
+        }
+        .cal-grid .dim { opacity: 0.35; }
+        .weather-main { display: flex; align-items: center; gap: 12px; }
+        .weather-emoji { font-size: 36px; line-height: 1; }
+        .weather-temp { font-size: 26px; font-weight: bold; }
+        .weather-desc { font-size: 13px; opacity: 0.9; margin-top: 2px; }
+        .weather-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 12px;
+            opacity: 0.85;
+        }
+        .weather-days {
+            margin-top: 8px;
+            padding-top: 6px;
+            border-top: 1px solid rgba(255,255,255,0.22);
+            font-size: 12px;
+        }
+        .weather-day-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 2px 0;
+            opacity: 0.9;
+        }
+        .weather-cities {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255,255,255,0.22);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .city-chip {
+            flex: 1;
+            min-width: 48px;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.25);
+            color: white;
+            font-size: 12px;
+            padding: 4px 0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .city-chip:hover { background: rgba(255,255,255,0.28); }
+        .city-chip.active {
+            background: rgba(255,255,255,0.88);
+            color: #764ba2;
+            font-weight: bold;
+        }
+        .visit-counter {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            background: rgba(255,255,255,0.13);
+            border: 1px solid rgba(255,255,255,0.28);
+            border-radius: 999px;
+            padding: 8px 16px;
+            font-size: 13px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+        @media (max-width: 720px) {
+            body { align-items: flex-start; padding-top: 240px; }
+            .widget-panel { top: 16px; left: 16px; right: 16px; }
+            .widget-card { width: auto; flex: 1; }
+            .visit-counter { right: 16px; bottom: 16px; }
+        }
     </style>
 </head>
 <body>
     <div class="lang-switch">
         <button class="lang-btn" data-lang="zh">中文</button>
         <button class="lang-btn active" data-lang="en">English</button>
+    </div>
+
+    <!-- 左上角：日历 + 当地天气预报 -->
+    <div class="widget-panel">
+        <div class="widget-card">
+            <div class="widget-title">
+                <button class="cal-nav" id="cal-prev" title="上一月">&#8249;</button>
+                <span id="cal-title">--</span>
+                <button class="cal-nav" id="cal-next" title="下一月">&#8250;</button>
+            </div>
+            <div class="cal-grid" id="cal-grid"></div>
+        </div>
+        <div class="widget-card">
+            <div class="widget-title"><span id="w-title">&#127780;&#65039; 当地天气</span><button class="cal-nav" id="w-switch" title="点击切换城市">&#8646;</button></div>
+            <div class="weather-main">
+                <div class="weather-emoji" id="w-emoji">&#9203;</div>
+                <div>
+                    <div class="weather-temp" id="w-temp">--&deg;C</div>
+                    <div class="weather-desc" id="w-desc">正在获取天气&hellip;</div>
+                </div>
+            </div>
+            <div class="weather-meta">
+                <span id="w-humidity">湿度 --%</span>
+                <span id="w-wind">风速 -- km/h</span>
+            </div>
+            <div class="weather-days" id="w-days"></div>
+            <div class="weather-cities" id="w-cities"></div>
+        </div>
     </div>
 
     <div class="container">
@@ -108,6 +261,9 @@
         </div>
     </div>
 
+    <!-- 右下角：访客计数 -->
+    <div class="visit-counter">&#128065; 访客计数：<span id="visit-count">&hellip;</span></div>
+
     <script>
         // 语言切换功能
         const btns = document.querySelectorAll('.lang-btn');
@@ -119,6 +275,314 @@
                 
                 document.querySelector('.zh').style.display = lang === 'zh' ? 'block' : 'none';
                 document.querySelector('.en').style.display = lang === 'en' ? 'block' : 'none';
+
+                // 同步刷新天气组件语言
+                currentLang = lang;
+                updateWeatherLang();
+            });
+        });
+
+        // ===== 访客计数（基于浏览器本地存储，基数 90000） =====
+        (function () {
+            var KEY = 'h-icar-visit-count';
+            var BASE = 90000; // 计数基数
+            var n = parseInt(localStorage.getItem(KEY) || '0', 10);
+            if (isNaN(n)) n = 0;
+            n += 1;
+            try { localStorage.setItem(KEY, String(n)); } catch (e) {}
+            var el = document.getElementById('visit-count');
+            if (el) el.textContent = (BASE + n).toLocaleString('zh-CN');
+        })();
+
+        // ===== 左上角日历 =====
+        var calState = { y: new Date().getFullYear(), m: new Date().getMonth() };
+        function renderCalendar() {
+            var title = document.getElementById('cal-title');
+            var grid = document.getElementById('cal-grid');
+            var first = new Date(calState.y, calState.m, 1);
+            var startIdx = (first.getDay() + 6) % 7; // 周一为一周起始
+            var daysInMonth = new Date(calState.y, calState.m + 1, 0).getDate();
+            var prevDays = new Date(calState.y, calState.m, 0).getDate();
+            var today = new Date();
+            var heads = ['一', '二', '三', '四', '五', '六', '日'];
+            var html = '';
+            heads.forEach(function (d) { html += '<div class="cell head">' + d + '</div>'; });
+            for (var i = 0; i < startIdx; i++) html += '<div class="cell dim">' + (prevDays - startIdx + 1 + i) + '</div>';
+            for (var d = 1; d <= daysInMonth; d++) {
+                var isToday = d === today.getDate() && calState.m === today.getMonth() && calState.y === today.getFullYear();
+                html += '<div class="cell' + (isToday ? ' today' : '') + '">' + d + '</div>';
+            }
+            var trail = (7 - ((startIdx + daysInMonth) % 7)) % 7;
+            for (var t = 1; t <= trail; t++) html += '<div class="cell dim">' + t + '</div>';
+            title.textContent = calState.y + ' 年 ' + (calState.m + 1) + ' 月';
+            grid.innerHTML = html;
+        }
+        document.getElementById('cal-prev').addEventListener('click', function () {
+            calState.m--;
+            if (calState.m < 0) { calState.m = 11; calState.y--; }
+            renderCalendar();
+        });
+        document.getElementById('cal-next').addEventListener('click', function () {
+            calState.m++;
+            if (calState.m > 11) { calState.m = 0; calState.y++; }
+            renderCalendar();
+        });
+        renderCalendar();
+
+        // ===== 当地天气预报（Open-Meteo，无需 API Key） =====
+        // 中英文案（跟随页面语言切换）
+        var I18N = {
+            zh: {
+                title: '当地天气',
+                switchTitle: '点击切换城市',
+                loading: '正在获取天气…',
+                unavailable: '天气暂不可用',
+                humidity: '湿度',
+                wind: '风速',
+                current: '当前位置',
+                promptCity: '输入城市名称（如：深圳），留空恢复自动定位：',
+                notFound: '未找到该城市，请检查名称后重试',
+                today: '今天',
+                tomorrow: '明天',
+                week: ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+            },
+            en: {
+                title: 'Local Weather',
+                switchTitle: 'Click to switch city',
+                loading: 'Loading weather…',
+                unavailable: 'Weather unavailable',
+                humidity: 'Humidity',
+                wind: 'Wind',
+                current: 'Current location',
+                promptCity: 'Enter a city name (e.g. Shanghai). Leave empty to resume auto-location:',
+                notFound: 'City not found, please check the name',
+                today: 'Today',
+                tomorrow: 'Tomorrow',
+                week: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+            }
+        };
+        var activeLangBtn = document.querySelector('.lang-btn.active');
+        var currentLang = activeLangBtn ? activeLangBtn.getAttribute('data-lang') : 'en';
+        function t(key) { return I18N[currentLang][key]; }
+
+        // WMO 天气代码：[中文描述, 图标, 英文描述]
+        var WMO = {
+            0: ['晴', '☀️', 'Clear'], 1: ['晴间多云', '🌤️', 'Mainly clear'],
+            2: ['多云', '⛅', 'Partly cloudy'], 3: ['阴', '☁️', 'Overcast'],
+            45: ['雾', '🌫️', 'Fog'], 48: ['雾凇', '🌫️', 'Rime fog'],
+            51: ['毛毛雨', '🌦️', 'Light drizzle'], 53: ['小雨', '🌦️', 'Drizzle'], 55: ['中雨', '🌧️', 'Heavy drizzle'],
+            56: ['冻毛毛雨', '🌧️', 'Freezing drizzle'], 57: ['冻雨', '🌧️', 'Freezing drizzle'],
+            61: ['小雨', '🌧️', 'Light rain'], 63: ['中雨', '🌧️', 'Rain'], 65: ['大雨', '🌧️', 'Heavy rain'],
+            66: ['冻雨', '🌧️', 'Freezing rain'], 67: ['冻雨', '🌧️', 'Freezing rain'],
+            71: ['小雪', '🌨️', 'Light snow'], 73: ['中雪', '🌨️', 'Snow'],
+            75: ['大雪', '❄️', 'Heavy snow'], 77: ['雪粒', '❄️', 'Snow grains'],
+            80: ['小阵雨', '🌦️', 'Light showers'], 81: ['阵雨', '🌧️', 'Showers'], 82: ['强阵雨', '⛈️', 'Heavy showers'],
+            85: ['小阵雪', '🌨️', 'Light snow showers'], 86: ['大阵雪', '❄️', 'Snow showers'],
+            95: ['雷暴', '⛈️', 'Thunderstorm'], 96: ['雷暴伴冰雹', '⛈️', 'Thunderstorm with hail'],
+            99: ['强雷暴伴冰雹', '⛈️', 'Severe thunderstorm']
+        };
+        var FALLBACK_CITY = { zh: '北京', en: 'Beijing', lat: 39.9042, lon: 116.4074 };
+
+        // 预设快捷城市
+        var CITIES = [
+            { zh: '北京', en: 'Beijing', lat: 39.9042, lon: 116.4074 },
+            { zh: '纽约', en: 'New York', lat: 40.7128, lon: -74.006 },
+            { zh: '伦敦', en: 'London', lat: 51.5074, lon: -0.1278 },
+            { zh: '开罗', en: 'Cairo', lat: 30.0444, lon: 31.2357 }
+        ];
+        var AUTO_OPTION = { zh: '自动', en: 'Auto' };
+
+        var CITY_KEY = 'h-icar-city';
+        var currentCity = null; // null 表示自动定位
+        var lastWeatherData = null;
+        var lastPlaceName = '';
+
+        function describeWmo(code) {
+            var w = WMO[code];
+            if (!w) return { emoji: '❓', text: currentLang === 'zh' ? '未知' : 'Unknown' };
+            return { emoji: w[1], text: currentLang === 'zh' ? w[0] : w[2] };
+        }
+
+        function cityLabel(city) {
+            return city ? (city[currentLang] || city.zh || '') : '';
+        }
+
+        function renderWeather(data, placeName) {
+            var cur = data.current || {};
+            var w = describeWmo(cur.weather_code);
+            document.getElementById('w-emoji').textContent = w.emoji;
+            document.getElementById('w-temp').textContent = Math.round(cur.temperature_2m) + '°C';
+            var name = currentCity ? cityLabel(currentCity) : (placeName || t('current'));
+            document.getElementById('w-desc').textContent = name + ' · ' + w.text;
+            document.getElementById('w-humidity').textContent = t('humidity') + ' ' + Math.round(cur.relative_humidity_2m) + '%';
+            document.getElementById('w-wind').textContent = t('wind') + ' ' + Math.round(cur.wind_speed_10m) + ' km/h';
+            var days = data.daily || {};
+            var week = t('week');
+            var times = days.time || [];
+            var html = '';
+            for (var i = 0; i < times.length; i++) {
+                var dt = new Date(times[i] + 'T00:00:00');
+                var dw = describeWmo((days.weather_code || [])[i]);
+                var label = i === 0 ? t('today') : (i === 1 ? t('tomorrow') : week[dt.getDay()]);
+                html += '<div class="weather-day-row"><span>' + label + ' ' + dw.emoji + ' ' + dw.text + '</span><span>' +
+                    Math.round((days.temperature_2m_min || [])[i]) + '° / ' + Math.round((days.temperature_2m_max || [])[i]) + '°</span></div>';
+            }
+            document.getElementById('w-days').innerHTML = html;
+        }
+
+        function loadWeather(lat, lon, placeName) {
+            document.getElementById('w-desc').textContent = t('loading');
+            var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat +
+                '&longitude=' + lon +
+                '&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m' +
+                '&daily=weather_code,temperature_2m_max,temperature_2m_min' +
+                '&timezone=auto&forecast_days=3';
+            fetch(url)
+                .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+                .then(function (data) {
+                    lastWeatherData = data;
+                    lastPlaceName = placeName || '';
+                    renderWeather(data, placeName);
+                })
+                .catch(function () {
+                    document.getElementById('w-emoji').textContent = '⚠️';
+                    document.getElementById('w-desc').textContent = t('unavailable');
+                });
+        }
+
+        function getCityName(lat, lon, cb) {
+            fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat +
+                '&longitude=' + lon + '&localityLanguage=' + (currentLang === 'zh' ? 'zh' : 'en'))
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (j) { cb(j && (j.city || j.locality || j.principalSubdivision) || ''); })
+                .catch(function () { cb(''); });
+        }
+
+        // 通过 Open-Meteo 地理编码 API 解析城市名（指定语言）
+        function geocodeCity(name, lang, cb) {
+            var url = 'https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(name) +
+                '&count=1&language=' + lang + '&format=json';
+            fetch(url)
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (j) {
+                    if (j && j.results && j.results.length) {
+                        var r0 = j.results[0];
+                        cb({ lat: r0.latitude, lon: r0.longitude, name: r0.name });
+                    } else {
+                        cb(null);
+                    }
+                })
+                .catch(function () { cb(null); });
+        }
+
+        // 同时解析中英文名，便于语言切换后城市名仍能正确显示
+        function resolveCity(name, cb) {
+            geocodeCity(name, 'zh', function (c1) {
+                if (!c1) { cb(null); return; }
+                geocodeCity(name, 'en', function (c2) {
+                    cb({ zh: c1.name, en: c2 ? c2.name : c1.name, lat: c1.lat, lon: c1.lon });
+                });
+            });
+        }
+
+        // IP 定位兜底（拒绝 GPS 授权时使用）
+        function ipFallback() {
+            fetch('https://freeipapi.com/api/json')
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (j) {
+                    if (j && j.latitude && j.longitude) {
+                        loadWeather(j.latitude, j.longitude, j.cityName || j.city || '');
+                    } else {
+                        loadWeather(FALLBACK_CITY.lat, FALLBACK_CITY.lon, cityLabel(FALLBACK_CITY));
+                    }
+                })
+                .catch(function () { loadWeather(FALLBACK_CITY.lat, FALLBACK_CITY.lon, cityLabel(FALLBACK_CITY)); });
+        }
+
+        function autoLocate() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function (pos) {
+                        var lat = pos.coords.latitude, lon = pos.coords.longitude;
+                        getCityName(lat, lon, function (name) { loadWeather(lat, lon, name); });
+                    },
+                    function () { ipFallback(); },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 600000 }
+                );
+            } else {
+                ipFallback();
+            }
+        }
+
+        // 渲染快捷城市按钮（自动 + 4 个预设城市）
+        function renderCityChips() {
+            var box = document.getElementById('w-cities');
+            var html = '<button class="city-chip' + (currentCity ? '' : ' active') + '" data-idx="auto">' + AUTO_OPTION[currentLang] + '</button>';
+            CITIES.forEach(function (c, i) {
+                var active = currentCity && currentCity.zh === c.zh ? ' active' : '';
+                html += '<button class="city-chip' + active + '" data-idx="' + i + '">' + c[currentLang] + '</button>';
+            });
+            box.innerHTML = html;
+            Array.prototype.forEach.call(box.querySelectorAll('.city-chip'), function (btn) {
+                btn.addEventListener('click', function () {
+                    var idx = btn.getAttribute('data-idx');
+                    if (idx === 'auto') {
+                        selectAuto();
+                    } else {
+                        selectCity(CITIES[parseInt(idx, 10)]);
+                    }
+                });
+            });
+        }
+
+        function selectCity(city) {
+            currentCity = city;
+            try { localStorage.setItem(CITY_KEY, JSON.stringify(city)); } catch (e) {}
+            renderCityChips();
+            loadWeather(city.lat, city.lon, '');
+        }
+
+        function selectAuto() {
+            currentCity = null;
+            try { localStorage.removeItem(CITY_KEY); } catch (e) {}
+            renderCityChips();
+            autoLocate();
+        }
+
+        // 语言切换时刷新天气组件文案与城市按钮
+        function updateWeatherLang() {
+            document.getElementById('w-title').textContent = '🌤️ ' + t('title');
+            document.getElementById('w-switch').title = t('switchTitle');
+            renderCityChips();
+            if (lastWeatherData) renderWeather(lastWeatherData, lastPlaceName);
+        }
+
+        (function initWeather() {
+            updateWeatherLang();
+            var saved = null;
+            try { saved = JSON.parse(localStorage.getItem(CITY_KEY) || 'null'); } catch (e) {}
+            if (saved && saved.lat && saved.lon) {
+                currentCity = saved;
+                renderCityChips();
+                loadWeather(saved.lat, saved.lon, '');
+                return;
+            }
+            renderCityChips();
+            autoLocate();
+        })();
+
+        // 自定义城市输入（⇄ 按钮）
+        document.getElementById('w-switch').addEventListener('click', function () {
+            var input = prompt(t('promptCity'));
+            if (input === null) return;
+            input = input.trim();
+            if (!input) { selectAuto(); return; }
+            resolveCity(input, function (c) {
+                if (c) {
+                    selectCity(c);
+                } else {
+                    alert(t('notFound'));
+                }
             });
         });
     </script>
