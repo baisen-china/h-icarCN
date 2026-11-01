@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>井盖年龄榜 · 审核后台</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; margin:0; background:#f5f6f8; color:#222; }
+  header { background:#1989fa; color:#fff; padding:14px 20px; display:flex; align-items:center; justify-content:space-between; }
+  header h1 { font-size:18px; margin:0; }
+  .wrap { max-width:960px; margin:0 auto; padding:16px; }
+  .tabs { display:flex; gap:8px; margin-bottom:16px; align-items:center; flex-wrap:wrap; }
+  .tab { padding:8px 16px; border:1px solid #ccc; border-radius:20px; background:#fff; cursor:pointer; }
+  .tab.active { background:#1989fa; color:#fff; border-color:#1989fa; }
+  .panel { display:none; }
+  .panel.active { display:block; }
+  .card { background:#fff; border:1px solid #eee; border-radius:10px; padding:12px; margin-bottom:12px; display:flex; gap:12px; }
+  .card img { width:96px; height:96px; object-fit:cover; border-radius:8px; flex-shrink:0; background:#eee; }
+  .meta { flex:1; font-size:13px; line-height:1.6; word-break:break-all; }
+  .meta b { color:#1989fa; }
+  .actions { display:flex; flex-direction:column; gap:6px; justify-content:center; }
+  button { border:none; border-radius:6px; padding:8px 14px; cursor:pointer; font-size:13px; }
+  .approve { background:#07c160; color:#fff; }
+  .hide { background:#fa8c16; color:#fff; }
+  .reject { background:#ee0a24; color:#fff; }
+  .delete { background:#fff; color:#ee0a24; border:1px solid #ee0a24; }
+  .refresh { background:#fff; border:1px solid #1989fa; color:#1989fa; margin-left:auto; }
+  .logout { background:rgba(255,255,255,.2); color:#fff; border:none; border-radius:6px; padding:6px 12px; cursor:pointer; font-size:13px; }
+  .empty { text-align:center; color:#999; padding:40px; }
+  .badge { display:inline-block; border-radius:4px; padding:1px 8px; font-size:12px; margin-left:6px; vertical-align:middle; }
+  .badge.pending { background:#fff7e6; color:#d48806; }
+  .badge.approved { background:#e6f7e6; color:#07c160; }
+  .badge.rejected { background:#f5f5f5; color:#888; }
+  .badge.deleted { background:#ffeaea; color:#ee0a24; }
+  .card.deleted { opacity:.72; border-left:4px solid #ee0a24; }
+  .tag { display:inline-block; background:#fff7e6; color:#d48806; border-radius:4px; padding:1px 6px; font-size:12px; }
+  .link { color:#1989fa; cursor:pointer; text-decoration:underline; }
+  .link:hover { color:#0a6ed1; }
+  .cf-banner { background:#e8f3ff; border:1px solid #b3d8ff; border-radius:8px; padding:10px 12px; margin-bottom:12px; display:flex; align-items:center; gap:10px; font-size:13px; }
+  .cf-banner b { color:#1989fa; }
+  .cf-banner > span:first-child { flex:1; }
+  .cf-acts { display:flex; gap:6px; flex-wrap:wrap; }
+  .cf-act { border:none; border-radius:6px; padding:5px 12px; font-size:13px; cursor:pointer; color:#fff; }
+  .cf-act.hide { background:#fa8c16; }
+  .cf-act.reject { background:#ee0a24; }
+  .cf-act.black { background:#333; }
+  .cf-act.clear { background:#fff; color:#1989fa; border:1px solid #1989fa; }
+  .manhole-table { margin-bottom:12px; border:1px solid #eee; border-radius:10px; overflow:hidden; background:#fff; }
+  .manhole-table .mh-head { padding:8px 12px; font-size:13px; color:#666; background:#fafafa; border-bottom:1px solid #eee; }
+  table.mh { width:100%; border-collapse:collapse; font-size:13px; }
+  table.mh th, table.mh td { padding:8px 12px; text-align:left; border-bottom:1px solid #f2f2f2; }
+  table.mh th { color:#888; font-weight:normal; background:#fafafa; }
+  table.mh tbody tr { cursor:pointer; }
+  table.mh tbody tr:hover { background:#e8f3ff; }
+  table.mh td.mh-id { color:#1989fa; font-weight:600; }
+  table.mh .mh-cur { background:#fff7e6; }
+  .mh-empty { padding:14px 12px; color:#999; font-size:13px; }
+</style>
+</head>
+<body>
+<header><h1>井盖年龄榜 · 审核后台</h1><button class="logout" id="logout">退出登录</button></header>
+<div class="wrap">
+  <div class="tabs">
+    <div class="tab active" data-t="manholes">井盖内容</div>
+    <div class="tab" data-t="comments">留言内容</div>
+    <div class="tab" data-t="reports">用户举报</div>
+    <div class="tab" data-t="blacklist">黑名单</div>
+    <button class="refresh" id="refresh">刷新</button>
+  </div>
+  <div class="panel active" id="panel-manholes"></div>
+  <div class="panel" id="panel-comments">
+    <div id="manhole-table" class="manhole-table"></div>
+    <div id="cf-banner" class="cf-banner" style="display:none"></div>
+    <div id="cf-list"></div>
+  </div>
+  <div class="panel" id="panel-reports"></div>
+  <div class="panel" id="panel-blacklist"></div>
+</div>
+<script>
+const TABS = ['manholes','comments','reports','blacklist'];
+const STATUS_TEXT = { pending:'待审核', approved:'已公开', rejected:'已隐藏', deleted:'已删除' };
+let cur = 'manholes';
+let commentFilter = null; // 审核页留言钻取筛选：{ type:'user'|'manhole', value }
+let commentRows = [];     // 当前钻取下的留言，用于派生批量操作的设备ID集合
+
+document.querySelectorAll('.tab').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    cur = t.dataset.t;
+    document.getElementById('panel-' + cur).classList.add('active');
+    // 切换标签时取消留言钻取筛选
+    commentFilter = null;
+    renderCommentBanner();
+    load(cur);
+  };
+});
+document.getElementById('refresh').onclick = () => load(cur);
+document.getElementById('logout').onclick = async () => {
+  await fetch('/api/logout', { method: 'POST' }).catch(() => {});
+  location.href = '/login';
+};
+
+async function load(type) {
+  // 留言标签使用独立的列表容器，便于顶部保留筛选横幅
+  const panel = document.getElementById('panel-' + type);
+  const listEl = (type === 'comments') ? document.getElementById('cf-list') : panel;
+  listEl.innerHTML = '<div class="empty">加载中…</div>';
+  try {
+    let rows = [];
+    let resp;
+    if (type === 'blacklist') {
+      resp = await fetch('/api/blacklist');
+    } else if (type === 'reports') {
+      resp = await fetch('/api/reports');
+    } else if (type === 'comments' && commentFilter) {
+      // 钻取：按用户名或关联井盖编号筛选留言
+      resp = await fetch('/api/comments?filter=' + encodeURIComponent(commentFilter.type) +
+        '&value=' + encodeURIComponent(commentFilter.value));
+    } else {
+      resp = await fetch('/api/all?table=' + type);
+    }
+    if (resp.status === 401) { location.href = '/login'; return; }
+    rows = (await resp.json()).rows;
+    if (!rows.length) { listEl.innerHTML = '<div class="empty">暂无数据</div>'; return; }
+    if (type === 'comments') commentRows = rows;
+    listEl.innerHTML = rows.map(r => card(type, r)).join('');
+    listEl.querySelectorAll('button[data-act]').forEach(b => { b.onclick = onAction; });
+    listEl.querySelectorAll('.link').forEach(el => { el.onclick = onLink; });
+    if (type === 'blacklist') {
+      listEl.querySelectorAll('[data-del]').forEach(b => { b.onclick = () => removeBlacklist(b.dataset.del); });
+    }
+    if (type === 'comments') loadManholeTable();
+  } catch (e) {
+    listEl.innerHTML = '<div class="empty">加载失败: ' + e.message + '</div>';
+  }
+}
+
+async function onAction() {
+  const { table, id, act } = this.dataset;
+  try {
+    if (act === 'delete') {
+      if (!confirm('确认软删除该内容？内容将不再公开展示，但仍可在审核页「召回」恢复。')) return;
+      const res = await fetch('/api/delete', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ table, id })
+      });
+      const j = await res.json();
+      if (res.ok) load(cur); else alert('删除失败: ' + (j.error || ''));
+    } else if (act === 'purge') {
+      if (!confirm('确认彻底删除？该内容及其图片将被永久移除，不可恢复。')) return;
+      const res = await fetch('/api/purge', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ table, id })
+      });
+      const j = await res.json();
+      if (res.ok) load(cur); else alert('彻底删除失败: ' + (j.error || ''));
+    } else if (act === 'recall') {
+      const res = await fetch('/api/set-status', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ table, id, status: 'approved' })
+      });
+      const j = await res.json();
+      if (res.ok) load(cur); else alert('召回失败: ' + (j.error || ''));
+    } else {
+      const status = act === 'approve' ? 'approved' : 'rejected';
+      const res = await fetch('/api/set-status', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ table, id, status })
+      });
+      const j = await res.json();
+      if (res.ok) load(cur); else alert('操作失败: ' + (j.error || ''));
+    }
+  } catch (e) {
+    alert('请求出错: ' + e.message);
+  }
+}
+
+// 点击留言中的「用户名」或「关联井盖编号」→ 钻取该用户/该井盖的全部留言
+function onLink() {
+  const filter = this.dataset.filter;
+  const value = this.dataset.value;
+  if (!filter || value == null || value === '') return;
+  commentFilter = { type: filter, value: value };
+  // 自动切到留言标签并展示筛选结果
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+  const tab = document.querySelector('.tab[data-t="comments"]');
+  if (tab) tab.classList.add('active');
+  document.getElementById('panel-comments').classList.add('active');
+  cur = 'comments';
+  renderCommentBanner();
+  load('comments');
+}
+
+function renderCommentBanner() {
+  const b = document.getElementById('cf-banner');
+  if (!commentFilter) { b.style.display = 'none'; b.innerHTML = ''; return; }
+  let html, btns;
+  if (commentFilter.type === 'user') {
+    html = '正在查看 <b>用户：' + esc(commentFilter.value) + '</b> 的全部留言';
+    btns =
+      '<button class="cf-act hide" data-bulk="hide">隐藏该用户全部留言</button>' +
+      '<button class="cf-act reject" data-bulk="delete">删除全部留言</button>' +
+      '<button class="cf-act black" data-bulk="blacklist">添加黑名单</button>' +
+      '<button class="cf-act clear" id="cf-clear">返回全部</button>';
+  } else {
+    html = '正在查看 <b>井盖编号：#' + esc(commentFilter.value) + '</b> 的全部留言';
+    btns =
+      '<button class="cf-act hide" data-bulk="hide">全部隐藏</button>' +
+      '<button class="cf-act reject" data-bulk="delete">全部删除</button>' +
+      '<button class="cf-act clear" id="cf-clear">返回全部</button>';
+  }
+  b.style.display = 'flex';
+  b.innerHTML = '<span>' + html + '</span><span class="cf-acts">' + btns + '</span>';
+  b.querySelectorAll('[data-bulk]').forEach(el => { el.onclick = onBulk; });
+  document.getElementById('cf-clear').onclick = () => {
+    commentFilter = null;
+    renderCommentBanner();
+    load('comments');
+  };
+}
+
+// 顶部索引表：所有有留言的井盖编号 + 留言数 + 最近留言时间（按最近留言倒序）；点击编号钻取该井盖留言
+function drillManhole(id) {
+  commentFilter = { type: 'manhole', value: String(id) };
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+  const tab = document.querySelector('.tab[data-t="comments"]');
+  if (tab) tab.classList.add('active');
+  document.getElementById('panel-comments').classList.add('active');
+  cur = 'comments';
+  renderCommentBanner();
+  load('comments');
+}
+async function loadManholeTable() {
+  const el = document.getElementById('manhole-table');
+  if (!el) return;
+  try {
+    const resp = await fetch('/api/comments/by-manhole');
+    if (resp.status === 401) return;
+    const rows = (await resp.json()).rows || [];
+    if (!rows.length) {
+      el.innerHTML = '<div class="mh-head">井盖留言索引</div><div class="mh-empty">暂无有留言的井盖</div>';
+      return;
+    }
+    const curId = (commentFilter && commentFilter.type === 'manhole') ? String(commentFilter.value) : null;
+    const body = rows.map(r => {
+      const id = String(r.manhole_id);
+      const cls = (id === curId) ? ' class="mh-cur"' : '';
+      return `<tr data-mh="${esc(id)}"${cls}>` +
+        `<td class="mh-id">#${esc(id)}</td>` +
+        `<td>${r.comment_count}</td>` +
+        `<td>${esc(r.last_comment_at)}</td></tr>`;
+    }).join('');
+    el.innerHTML = '<div class="mh-head">井盖留言索引（点击编号查看该井盖全部留言，按最近留言排序）</div>' +
+      '<table class="mh"><thead><tr><th>井盖编号</th><th>留言数</th><th>最近留言</th></tr></thead><tbody>' +
+      body + '</tbody></table>';
+    el.querySelectorAll('tbody tr').forEach(tr => { tr.onclick = () => drillManhole(tr.dataset.mh); });
+  } catch (e) {
+    el.innerHTML = '<div class="mh-head">井盖留言索引</div><div class="mh-empty">加载失败: ' + e.message + '</div>';
+  }
+}
+
+// 批量操作：按当前钻取范围，整批隐藏/删除或拉黑
+async function onBulk() {
+  const act = this.dataset.bulk;
+  try {
+    if (act === 'hide' || act === 'delete') {
+      const label = act === 'hide' ? '隐藏' : '删除';
+      if (!confirm('确认' + label + '当前筛选范围内的全部留言？')) return;
+      const body = { action: act };
+      if (commentFilter.type === 'user') {
+        const ids = distinctDeviceIds();
+        if (!ids.length) return alert('未找到该用户的设备标识');
+        body.deviceIds = ids;
+      } else {
+        body.manholeId = commentFilter.value;
+      }
+      const res = await fetch('/api/comments/bulk', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const j = await res.json();
+      if (res.ok) { alert('已' + label + ' ' + (j.updated || 0) + ' 条留言'); load('comments'); }
+      else alert('操作失败：' + (j.error || ''));
+    } else if (act === 'blacklist') {
+      const ids = distinctDeviceIds();
+      if (!ids.length) return alert('未找到该用户的设备标识');
+      if (!confirm('将以下设备ID加入黑名单？被拉黑后该用户访问界面将始终为「受限个人页」，无法浏览/发布，除非被移除黑名单：\n' + ids.join('\n'))) return;
+      const res = await fetch('/api/blacklist', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceIds: ids, note: '用户名: ' + commentFilter.value })
+      });
+      const j = await res.json();
+      if (res.ok) { alert('已加入黑名单 ' + (j.inserted || 0) + ' 个设备；该用户全部留言已自动隐藏（共 ' + (j.hidden || 0) + ' 条）'); load('comments'); }
+      else alert('操作失败：' + (j.error || ''));
+    }
+  } catch (e) {
+    alert('请求出错：' + e.message);
+  }
+}
+
+// 从当前钻取留言中提取去重后的设备ID集合（用于「该用户」批量操作/拉黑）
+function distinctDeviceIds() {
+  const set = new Set();
+  commentRows.forEach(r => { if (r.uploader_device_id) set.add(r.uploader_device_id); });
+  return [...set];
+}
+
+// 移除黑名单（恢复访问）
+async function removeBlacklist(deviceId) {
+  if (!confirm('确认将该设备移出黑名单？移除后用户即可恢复正常访问。')) return;
+  try {
+    const res = await fetch('/api/blacklist', {
+      method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deviceId })
+    });
+    const j = await res.json();
+    if (res.ok) { alert('已移除黑名单；该设备用户的留言已恢复公开（共 ' + (j.restored || 0) + ' 条）'); load('blacklist'); } else alert('移除失败：' + (j.error || ''));
+  } catch (e) { alert('请求出错：' + e.message); }
+}
+
+function esc(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+function badge(status) {
+  const t = STATUS_TEXT[status] || status || '—';
+  const cls = ['pending','approved','rejected','deleted'].includes(status) ? status : '';
+  return `<span class="badge ${cls}">${esc(t)}</span>`;
+}
+
+function card(type, r) {
+  if (type === 'blacklist') {
+    return `<div class="card"><div class="meta">
+      <div><b>设备ID：</b>${esc(r.device_id)}</div>
+      <div>加入时间：${esc(r.added_at) || '—'} ｜ 备注：${esc(r.note) || '—'} ｜ 操作人：${esc(r.added_by) || '—'}</div>
+    </div><div class="actions">
+      <button class="delete" data-del="${esc(r.device_id)}">移除黑名单</button>
+    </div></div>`;
+  }
+  if (type === 'manholes') {
+    const img = r.image_url
+      ? `<img src="${esc(r.image_url)}" onerror="this.style.display='none'">`
+      : '<div style="width:96px;height:96px;background:#eee;border-radius:8px;flex-shrink:0"></div>';
+    const actions = actionButtons('manholes', r.id, r.status);
+    return `<div class="card${r.status==='deleted'?' deleted':''}">${img}<div class="meta">
+      <div><b>${esc(r.province) || '—'}</b> ${esc(r.city) || ''} ${esc(r.district) || ''} ${badge(r.status)}</div>
+      <div>安装年份：${esc(r.install_year) || '—'} ｜ 材质：${esc(r.material) || '—'}</div>
+      <div>设备：${esc(r.uploader_device_id) || '—'} ｜ 提交：${esc(r.created_at)}</div>
+    </div><div class="actions">${actions}</div></div>`;
+  }
+  if (type === 'comments') {
+    const actions = actionButtons('comments', r.id, r.status);
+    const nameHtml = (r.display_name != null && r.display_name !== '')
+      ? `<span class="link" data-filter="user" data-value="${esc(r.display_name)}">${esc(r.display_name)}</span>`
+      : '—';
+    const manholeHtml = (r.manhole_id != null)
+      ? `<span class="link" data-filter="manhole" data-value="${esc(r.manhole_id)}">${esc(r.manhole_id)}</span>`
+      : '—';
+    return `<div class="card${r.status==='deleted'?' deleted':''}"><div class="meta">
+      <div>${esc(r.content)} ${badge(r.status)}</div>
+      <div>用户：${nameHtml} ｜ 关联井盖：${manholeHtml}</div>
+      <div>设备：${esc(r.uploader_device_id) || '—'} ｜ 提交：${esc(r.created_at)}</div>
+    </div><div class="actions">${actions}</div></div>`;
+  }
+  return `<div class="card${r.status==='deleted'?' deleted':''}"><div class="meta">
+    <div><span class="tag">${esc(r.target_type)}</span> 目标ID：${esc(r.target_id)} ${badge(r.status)}</div>
+    <div>原因：${esc(r.reason) || '—'}</div>
+    <div>举报人：${esc(r.reporter_device_id) || '—'} ｜ 时间：${esc(r.created_at)}</div>
+  </div><div class="actions">
+    <button class="delete" data-act="delete" data-table="reports" data-id="${esc(r.id)}">删除</button>
+  </div></div>`;
+}
+
+function actionButtons(table, id, status) {
+  let btns = '';
+  if (status === 'deleted') {
+    // 已删除：可「召回」恢复显示；或「彻底删除」永久移除
+    btns += `<button class="approve" data-act="recall" data-table="${table}" data-id="${esc(id)}">召回</button>`;
+    btns += `<button class="delete" data-act="purge" data-table="${table}" data-id="${esc(id)}">彻底删除</button>`;
+  } else if (status === 'approved') {
+    btns += `<button class="hide" data-act="hide" data-table="${table}" data-id="${esc(id)}">隐藏</button>`;
+  } else {
+    btns += `<button class="approve" data-act="approve" data-table="${table}" data-id="${esc(id)}">公开</button>`;
+  }
+  if (status !== 'deleted') {
+    btns += `<button class="delete" data-act="delete" data-table="${table}" data-id="${esc(id)}">删除</button>`;
+  }
+  return btns;
+}
+
+// 初始加载井盖内容；黑名单标签首次点击时再加载（load 内已按 type 分派）
+load('manholes');
+</script>
+</body>
+</html>

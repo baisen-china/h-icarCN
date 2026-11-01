@@ -1,0 +1,9 @@
+{
+  "name": "manhole-app",
+  "version": "1.0.0",
+  "description": "井盖年龄榜 - 基于 uni-app + Supabase 的应用",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
+    "vue": "^3.5.44"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "manhole-admin",
+  "version": "1.0.0",
+  "private": true,
+  "description": "井盖年龄榜 · 简易审核后台（带登录保护）",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "pg": "^8.23.1"
+  }
+}

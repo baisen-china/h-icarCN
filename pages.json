@@ -1,0 +1,56 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": { "navigationBarTitleText": "井盖年龄榜" }
+    },
+    {
+      "path": "pages/upload/upload",
+      "style": { "navigationBarTitleText": "上传井盖" }
+    },
+    {
+      "path": "pages/detail/detail",
+      "style": { "navigationBarTitleText": "井盖详情" }
+    },
+    {
+      "path": "pages/comment/comment",
+      "style": { "navigationBarTitleText": "留言" }
+    },
+    {
+      "path": "pages/map/map",
+      "style": { "navigationBarTitleText": "井盖地图" }
+    },
+    {
+      "path": "pages/pickLocation/pickLocation",
+      "style": { "navigationBarTitleText": "选择位置" }
+    },
+    {
+      "path": "pages/blocked/blocked",
+      "style": { "navigationBarTitleText": "个人中心" }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "井盖年龄榜",
+    "navigationBarBackgroundColor": "#F8F8F8",
+    "backgroundColor": "#F8F8F8"
+  },
+  "tabBar": {
+    "color": "#999",
+    "selectedColor": "#1989fa",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "排名",
+        "iconPath": "static/tab-rank.png",
+        "selectedIconPath": "static/tab-rank-active.png"
+      },
+      {
+        "pagePath": "pages/upload/upload",
+        "text": "上传",
+        "iconPath": "static/tab-upload.png",
+        "selectedIconPath": "static/tab-upload-active.png"
+      }
+    ]
+  }
+}

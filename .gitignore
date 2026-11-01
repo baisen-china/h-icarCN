@@ -1,0 +1,26 @@
+# ===== 依赖 =====
+node_modules/
+admin/node_modules/
+
+# ===== uni-app 构建缓存（HBuilderX 本地产物，体积大且可重建）=====
+unpackage/
+
+# ===== 本地构建输出（H5 包通过 publish 脚本复制到 docs/ 再提交）=====
+dist/
+
+# ===== 密钥：绝不可提交 =====
+admin/.env
+.env
+.env.local
+
+# ===== WorkBuddy 内部（项目记忆/自动化，不进仓库）=====
+.workbuddy/
+
+# ===== 编辑器 / 系统 / 日志 =====
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+
+# ===== 临时产物 =====
+.reports_cols.js
