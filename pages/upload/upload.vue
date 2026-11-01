@@ -58,6 +58,7 @@
 import { supabase, getDeviceId } from '@/utils/supabase.js'
 import { submitModerated } from '@/utils/moderate.js'
 import { getBlocked } from '@/utils/blocked.js'
+import { getIdentity } from '@/utils/identity.js'
 
 const PROVINCES = ['北京','天津','上海','重庆','河北','山西','内蒙古','辽宁','吉林','黑龙江','江苏','浙江','安徽','福建','江西','山东','河南','湖北','湖南','广东','广西','海南','四川','贵州','云南','西藏','陕西','甘肃','青海','宁夏','新疆','台湾','香港','澳门']
 
@@ -172,6 +173,7 @@ export default {
 
         // 3. 提交走人工审核：直接入库，force_pending 触发器置为 pending，
         //    等待管理后台人工审核（通过/隐藏/删除/召回）。
+        const { deviceId, name } = getIdentity()
         const { status, error: dbErr } = await submitModerated('manhole', {
           image_url: imageUrl,
           province: this.form.province,
@@ -181,7 +183,8 @@ export default {
           material: this.form.material,
           latitude: this.form.latitude != null ? Number(this.form.latitude) : null,
           longitude: this.form.longitude != null ? Number(this.form.longitude) : null,
-          uploader_device_id: getDeviceId()
+          uploader_device_id: deviceId,
+          display_name: name
         })
         if (dbErr) throw new Error('信息保存失败：' + (dbErr.message || dbErr))
 

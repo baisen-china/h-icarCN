@@ -8,6 +8,7 @@
       <text class="row">年份：{{ item.install_year || '未知' }} ｜ 材质：{{ item.material || '未知' }}</text>
       <text class="row age" v-if="item.install_year">年龄：{{ currentYear - item.install_year }} 年</text>
       <text class="row">上传时间：{{ item.created_at ? fmtTime(item.created_at) : '' }}</text>
+      <text class="row">上传者：{{ item.display_name || '匿名用户' }}</text>
     </view>
 
     <!-- 地理位置展示：让访问者一眼看出照片位置 -->

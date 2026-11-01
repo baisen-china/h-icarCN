@@ -27,6 +27,7 @@
         <view class="info">
           <text class="title"><text v-if="medals[item.id] && medals[item.id].icon">{{ medals[item.id].icon }} </text>📍 {{ item.province || '未知' }} {{ item.city || '' }} {{ item.district || '' }}</text>
           <text class="meta">年份：{{ item.install_year || '未知' }} ｜ 材质：{{ item.material || '未知' }}</text>
+          <text class="meta">上传者：{{ item.display_name || '匿名' }}</text>
           <text class="age" v-if="item.install_year">年龄：{{ currentYear - item.install_year }} 年</text>
         </view>
       </view>
@@ -34,6 +35,7 @@
     <view class="empty" v-else>暂无数据，去上传第一个井盖吧～</view>
 
     <view class="visit">🌐 累计访问 {{ visitCount }} 次</view>
+    <view class="sale">本域名待价而沽，有心者请联系QQ:495727171</view>
   </view>
 </template>
 
@@ -170,4 +172,5 @@ export default {
 .age { font-size: 13px; color: #ff6b00; font-weight: bold; }
 .empty { text-align: center; color: #999; margin-top: 60px; }
 .visit { text-align: center; color: #999; font-size: 12px; margin-top: 16px; }
+.sale { text-align: left; color: #bbb; font-size: 11px; margin-top: 6px; padding-left: 4px; }
 </style>
