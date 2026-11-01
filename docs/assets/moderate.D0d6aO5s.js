@@ -1,0 +1,1 @@
+import{s as n}from"./index-DoekBNvH.js";async function r(r,t){try{const e="manhole"===r?"manholes":"comments",{data:s,error:i}=await n.from(e).insert(t).select("id").single();return i?{status:"pending",id:null,error:i}:{status:"pending",id:(null==s?void 0:s.id)??null,error:null}}catch(e){return{status:"pending",id:null,error:e}}}export{r as s};
