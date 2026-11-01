@@ -1,5 +1,5 @@
 -- ============================================================================
--- 井盖年龄榜 manhole-app — Supabase 表结构与 RLS 策略
+-- 井盖龙虎榜 manhole-app — Supabase 表结构与 RLS 策略
 -- 说明：前端使用 anon/publishable key，因此安全边界完全依赖 RLS。
 -- 设计原则：公开只读"已审核(status='approved')"内容；匿名可提交，但提交内容
 --           先进入 pending，由管理员(service_role)审核后再公开，防止灌水/垃圾公开。

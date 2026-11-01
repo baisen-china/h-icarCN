@@ -1,5 +1,5 @@
 -- ============================================================================
--- 井盖年龄榜 manhole-app — reports 表 RLS（与 manholes/comments 对齐）
+-- 井盖龙虎榜 manhole-app — reports 表 RLS（与 manholes/comments 对齐）
 -- 说明：该表为"用户举报"功能表，应用当前未使用，但模板已建且 RLS 已开启。
 -- 策略：匿名仅可"提交举报"(insert)，不可读取举报内容（无 select 策略）；
 --       管理员用 postgres/service_role 角色连接即可管理（绕过 RLS）。

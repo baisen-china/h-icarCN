@@ -1,5 +1,5 @@
 // ============================================================================
-// 井盖年龄榜 — 人工审核 Edge Function（纯人工审核，无云端内容审核）
+// 井盖龙虎榜 — 人工审核 Edge Function（纯人工审核，无云端内容审核）
 // 部署：supabase functions deploy moderate
 // 说明：SUPABASE_URL 与 SUPABASE_SERVICE_ROLE_KEY 由平台自动注入，无需设置。
 // 逻辑：service_role 插入记录（force_pending 触发器自动置为 pending），

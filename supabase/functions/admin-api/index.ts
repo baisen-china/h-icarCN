@@ -1,5 +1,5 @@
 // ============================================================================
-// 井盖年龄榜 — 审核后台 API（Supabase Edge Function 版）
+// 井盖龙虎榜 — 审核后台 API（Supabase Edge Function 版）
 // 部署：supabase functions deploy admin-api
 // 说明：
 //   - SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY 由平台自动注入，无需手动设置；

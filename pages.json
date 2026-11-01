@@ -2,7 +2,7 @@
   "pages": [
     {
       "path": "pages/index/index",
-      "style": { "navigationBarTitleText": "井盖年龄榜" }
+      "style": { "navigationBarTitleText": "井盖龙虎榜" }
     },
     {
       "path": "pages/upload/upload",
@@ -31,7 +31,7 @@
   ],
   "globalStyle": {
     "navigationBarTextStyle": "black",
-    "navigationBarTitleText": "井盖年龄榜",
+    "navigationBarTitleText": "井盖龙虎榜",
     "navigationBarBackgroundColor": "#F8F8F8",
     "backgroundColor": "#F8F8F8"
   },

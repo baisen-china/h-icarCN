@@ -17,7 +17,7 @@
       <view class="box-d">您的访问权限已被限制，当前仅可查看此个人页，暂无法浏览与发布内容。若需恢复，请联系管理员解除限制。</view>
     </view>
 
-    <view class="foot">© 井盖年龄榜</view>
+    <view class="foot">© 井盖龙虎榜</view>
   </view>
 </template>
 

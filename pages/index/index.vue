@@ -11,6 +11,9 @@
       <picker mode="selector" :range="provinces" @change="onProvinceChange">
         <view class="picker">{{ province || '全部省份' }}</view>
       </picker>
+      <picker mode="selector" :range="years" @change="onYearChange">
+        <view class="picker">{{ year || '全部年份' }}</view>
+      </picker>
       <picker mode="selector" :range="sortOptions" @change="onSortChange">
         <view class="picker">{{ sortLabel }}</view>
       </picker>
@@ -29,6 +32,8 @@
       </view>
     </view>
     <view class="empty" v-else>暂无数据，去上传第一个井盖吧～</view>
+
+    <view class="visit">🌐 累计访问 {{ visitCount }} 次</view>
   </view>
 </template>
 
@@ -45,15 +50,20 @@ export default {
       medals: {},
       provinces: ['全部省份'],
       province: '',
+      years: ['全部年份'],
+      year: '',
       sort: 'age_desc',
       sortOptions: ['最老优先', '最新优先', '最近上传'],
       sortLabel: '最老优先',
-      currentYear: new Date().getFullYear()
+      currentYear: new Date().getFullYear(),
+      visitCount: 0
     }
   },
   onShow() {
     this.loadProvinces()
+    this.loadYears()
     this.loadList()
+    this.loadVisit()
   },
   methods: {
     onNameChange() {},
@@ -73,6 +83,9 @@ export default {
       if (this.province && this.province !== '全部省份') {
         q = q.eq('province', this.province)
       }
+      if (this.year && this.year !== '全部年份') {
+        q = q.eq('install_year', Number(this.year))
+      }
       if (this.sort === 'age_desc') {
         q = q.order('install_year', { ascending: true, nullsFirst: false })
       } else if (this.sort === 'age_asc') {
@@ -88,8 +101,24 @@ export default {
       const md = this.medals[item.id]
       return md ? md.icon : ''
     },
+    async loadYears() {
+      const { data } = await supabase
+        .from('manholes')
+        .select('install_year')
+        .eq('status', 'approved')
+        .not('install_year', 'is', null)
+      if (data) {
+        const set = [...new Set(data.map(r => r.install_year).filter(Boolean))]
+          .sort((a, b) => Number(b) - Number(a))
+        this.years = ['全部年份', ...set.map(String)]
+      }
+    },
     onProvinceChange(e) {
       this.province = this.provinces[e.detail.value]
+      this.loadList()
+    },
+    onYearChange(e) {
+      this.year = this.years[e.detail.value]
       this.loadList()
     },
     onSortChange(e) {
@@ -109,6 +138,18 @@ export default {
     },
     onImgError(item) {
       item.image_url = ''
+    },
+    async loadVisit() {
+      const key = 'visit_counted_home'
+      try {
+        const { data } = !uni.getStorageSync(key)
+          ? await supabase.rpc('bump_visit', { p_page: 'home' })
+          : await supabase.rpc('get_visit', { p_page: 'home' })
+        if (data != null) this.visitCount = Number(data)
+        if (!uni.getStorageSync(key)) uni.setStorageSync(key, '1')
+      } catch (e) {
+        // 表/RPC 未建好时静默失败，不影响主页其余功能
+      }
     }
   }
 }
@@ -128,4 +169,5 @@ export default {
 .meta { font-size: 12px; color: #666; }
 .age { font-size: 13px; color: #ff6b00; font-weight: bold; }
 .empty { text-align: center; color: #999; margin-top: 60px; }
+.visit { text-align: center; color: #999; font-size: 12px; margin-top: 16px; }
 </style>

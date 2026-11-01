@@ -1,5 +1,5 @@
 -- ============================================================================
--- 井盖年龄榜 manhole-app — 存储桶 + 存储 RLS 修复
+-- 井盖龙虎榜 manhole-app — 存储桶 + 存储 RLS 修复
 -- 问题：上传图片报 "new row violates row-level security policy"。
 -- 根因：之前只建了表与表级 RLS，从未创建 manhole-images 存储桶，也没给
 --       storage.objects 配置匿名上传 / 读取策略。supabase.storage.upload()

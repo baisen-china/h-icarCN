@@ -1,5 +1,5 @@
 @echo off
-REM 发布井盖年龄榜 H5 到 GitHub Pages（docs/ 目录）
+REM 发布井盖龙虎榜 H5 到 GitHub Pages（docs/ 目录）
 REM 步骤：
 REM   1) 在 HBuilderX 中：发行 → 网站-H5（SSR 发行也行，取 client 子目录）
 REM      构建产物位于 unpackage\dist\build\web\client
