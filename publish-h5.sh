@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # 发布井盖年龄榜 H5 到 GitHub Pages（docs/ 目录）
-# 1) HBuilderX：发行 → 网站-H5，产物位于 unpackage/dist/build/h5
+# 1) HBuilderX：发行 → 网站-H5（SSR 发行也行，取 client 子目录），产物位于 unpackage/dist/build/web/client
 # 2) 运行 bash publish-h5.sh，复制产物到 docs/
 # 3) git add docs && git commit && git push，GitHub Pages（源：main /docs）即生效
 set -e
 
-SRC="unpackage/dist/build/h5"
+SRC="unpackage/dist/build/web/client"
 DST="docs"
 
 if [ ! -d "$SRC" ]; then

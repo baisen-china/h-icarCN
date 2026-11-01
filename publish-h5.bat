@@ -1,11 +1,12 @@
 @echo off
 REM 发布井盖年龄榜 H5 到 GitHub Pages（docs/ 目录）
 REM 步骤：
-REM   1) 在 HBuilderX 中：发行 → 网站-H5（或 App/H5 等），构建产物位于 unpackage\dist\build\h5
+REM   1) 在 HBuilderX 中：发行 → 网站-H5（SSR 发行也行，取 client 子目录）
+REM      构建产物位于 unpackage\dist\build\web\client
 REM   2) 双击本脚本（或在项目根目录运行 publish-h5.bat），会把产物复制到 docs\
 REM   3) git add docs 并提交推送，GitHub Pages（源：main 分支 /docs）即生效
 
-set "SRC=unpackage\dist\build\h5"
+set "SRC=unpackage\dist\build\web\client"
 set "DST=docs"
 
 if not exist "%SRC%" (
