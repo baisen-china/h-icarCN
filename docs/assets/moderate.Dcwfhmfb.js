@@ -1,1 +1,0 @@
-import{s as r}from"./index-B8udcq9r.js";async function n(n,t){try{const s="manhole"===n?"manholes":"comments",{error:e}=await r.from(s).insert(t);return e?{status:"pending",id:null,error:e}:{status:"pending",id:null,error:null}}catch(s){return{status:"pending",id:null,error:s}}}export{n as s};

@@ -29,13 +29,17 @@
           <text class="meta">年份：{{ item.install_year || '未知' }} ｜ 材质：{{ item.material || '未知' }}</text>
           <text class="meta">上传者：{{ item.display_name || '匿名' }}</text>
           <text class="age" v-if="item.install_year">年龄：{{ currentYear - item.install_year }} 年</text>
+          <view class="like-mini" @click.stop="doLike(item)">
+            <text :class="{ on: likedToday(item.id) }">👍 {{ likeCounts[item.id] || 0 }}</text>
+            <text class="like-tip">{{ likedToday(item.id) ? '今日已赞' : '点赞' }}</text>
+          </view>
         </view>
       </view>
     </view>
     <view class="empty" v-else>暂无数据，去上传第一个井盖吧～</view>
 
     <view class="visit">🌐 累计访问 {{ visitCount }} 次</view>
-    <view class="sale">本域名待价而沽，有心者请联系QQ:495727171</view>
+    <view class="sale">本域名待价而沽，有意者请联系QQ:24028；对，本QQ也可以卖！</view>
   </view>
 </template>
 
@@ -43,6 +47,7 @@
 import { supabase } from '@/utils/supabase.js'
 import IdentityBar from '@/components/IdentityBar/IdentityBar.vue'
 import { computeMedals } from '@/utils/medal.js'
+import { isLikedToday, markLikedToday, likeManhole, fetchLikeCounts } from '@/utils/like.js'
 
 export default {
   components: { IdentityBar },
@@ -58,7 +63,8 @@ export default {
       sortOptions: ['最老优先', '最新优先', '最近上传'],
       sortLabel: '最老优先',
       currentYear: new Date().getFullYear(),
-      visitCount: 0
+      visitCount: 0,
+      likeCounts: {}
     }
   },
   onShow() {
@@ -98,6 +104,8 @@ export default {
       const { data } = await q.limit(200)
       this.list = data || []
       this.medals = computeMedals(this.list, this.currentYear)
+      // 批量拉取点赞数
+      this.likeCounts = await fetchLikeCounts(this.list.map(i => i.id))
     },
     medalIcon(item) {
       const md = this.medals[item.id]
@@ -141,6 +149,22 @@ export default {
     onImgError(item) {
       item.image_url = ''
     },
+    likedToday(id) {
+      return isLikedToday(id)
+    },
+    async doLike(item) {
+      if (isLikedToday(item.id)) {
+        return uni.showToast({ title: '今天已赞过，明天再来', icon: 'none' })
+      }
+      try {
+        const c = await likeManhole(item.id)
+        this.$set(this.likeCounts, item.id, c)
+        markLikedToday(item.id)
+        uni.showToast({ title: '点赞成功', icon: 'none' })
+      } catch (e) {
+        uni.showToast({ title: '点赞失败，请重试', icon: 'none' })
+      }
+    },
     async loadVisit() {
       const key = 'visit_counted_home'
       try {
@@ -170,6 +194,9 @@ export default {
 .title { font-size: 15px; font-weight: bold; }
 .meta { font-size: 12px; color: #666; }
 .age { font-size: 13px; color: #ff6b00; font-weight: bold; }
+.like-mini { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 13px; color: #ff6b00; font-weight: bold; }
+.like-mini .like-tip { font-size: 11px; color: #999; font-weight: normal; }
+.like-mini .on { color: #ff6b00; }
 .empty { text-align: center; color: #999; margin-top: 60px; }
 .visit { text-align: center; color: #999; font-size: 12px; margin-top: 16px; }
 .sale { text-align: left; color: #bbb; font-size: 11px; margin-top: 6px; padding-left: 4px; }

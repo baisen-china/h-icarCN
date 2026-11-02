@@ -9,6 +9,13 @@
       <text class="row age" v-if="item.install_year">年龄：{{ currentYear - item.install_year }} 年</text>
       <text class="row">上传时间：{{ item.created_at ? fmtTime(item.created_at) : '' }}</text>
       <text class="row">上传者：{{ item.display_name || '匿名用户' }}</text>
+
+      <view class="like-row">
+        <text class="like-count">👍 {{ likeCount }}</text>
+        <button class="like-btn" :class="{ liked: liked }" :disabled="liked" @click="doLike">
+          {{ liked ? '今日已赞' : '点赞' }}
+        </button>
+      </view>
     </view>
 
     <!-- 地理位置展示：让访问者一眼看出照片位置 -->
@@ -58,6 +65,7 @@ import { computeMedals } from '@/utils/medal.js'
 import { loadBMap } from '@/utils/mapConfig.js'
 import { locateBaiduPoint } from '@/utils/geo.js'
 import { formatBeijing } from '@/utils/time.js'
+import { isLikedToday, markLikedToday, likeManhole, fetchLikeCounts } from '@/utils/like.js'
 
 export default {
   components: { IdentityBar, CommentItem },
@@ -70,6 +78,8 @@ export default {
       currentYear: new Date().getFullYear(),
       medalIcon: '',
       hasCoord: false,
+      likeCount: 0,
+      liked: false,
       isH5: (typeof window !== 'undefined' && typeof window.document !== 'undefined'),
       _dmap: null,
       _dBMap: null
@@ -102,6 +112,11 @@ export default {
         .order('created_at', { ascending: true })
       this.comments = this.buildTree(cmts || [])
       this.topLevelCount = this.comments.length
+
+      // 加载点赞数与本机今日是否已赞
+      const cntMap = await fetchLikeCounts([this.id])
+      this.likeCount = cntMap[this.id] || 0
+      this.liked = isLikedToday(this.id)
 
       // 有坐标且为 H5 时，渲染详情页小地图
       this.$nextTick(() => this.initDetailMap())
@@ -188,6 +203,20 @@ export default {
     },
     onImgError() {
       this.item.image_url = ''
+    },
+    async doLike() {
+      if (this.liked) {
+        return uni.showToast({ title: '今天已赞过，明天再来', icon: 'none' })
+      }
+      try {
+        const c = await likeManhole(this.id)
+        this.likeCount = c
+        this.liked = true
+        markLikedToday(this.id)
+        uni.showToast({ title: '点赞成功', icon: 'none' })
+      } catch (e) {
+        uni.showToast({ title: '点赞失败，请重试', icon: 'none' })
+      }
     }
   }
 }
@@ -216,6 +245,10 @@ export default {
 }
 .geo-actions { margin-top: 10px; }
 .geo-btn { background: #1989fa; color: #fff; border-radius: 20px; font-size: 14px; }
+.like-row { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.like-count { font-size: 15px; color: #ff6b00; font-weight: bold; }
+.like-btn { background: #fff; color: #ff6b00; border: 1px solid #ff6b00; border-radius: 20px; font-size: 13px; padding: 0 16px; margin: 0; line-height: 2; }
+.like-btn.liked { background: #eee; color: #999; border-color: #ccc; }
 /* 瞄准（crosshair）图标 */
 .aim { position: relative; width: 22px; height: 22px; }
 .aim-ring { position: absolute; left: 5px; top: 5px; width: 12px; height: 12px; border: 2px solid #333; border-radius: 50%; box-sizing: border-box; }
