@@ -163,7 +163,7 @@ export default {
 </script>
 
 <style>
-.page { height: 100vh; display: flex; flex-direction: column; background: #fff; }
+.page { height: 100vh; height: 100dvh; display: flex; flex-direction: column; background: #fff; }
 .pm-wrap { position: relative; flex: 1; width: 100%; min-height: 0; }
 .pickmap { width: 100%; height: 100%; }
 .locate-fab {
@@ -180,7 +180,7 @@ export default {
 .search { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid #eee; }
 .sinput { flex: 1; border: 1px solid #eee; border-radius: 8px; padding: 8px 10px; font-size: 14px; }
 .sbtn { color: #1989fa; font-size: 14px; padding: 8px; }
-.bar { padding: 10px 14px; background: #fff; border-top: 1px solid #eee; display: flex; align-items: center; gap: 10px; }
+.bar { padding: 10px 14px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); background: #fff; border-top: 1px solid #eee; display: flex; align-items: center; gap: 10px; }
 .addr { flex: 1; font-size: 13px; color: #333; }
 .ok { background: #1989fa; color: #fff; font-size: 14px; margin: 0; padding: 0 18px; }
 </style>

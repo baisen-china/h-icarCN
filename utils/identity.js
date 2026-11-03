@@ -1,6 +1,7 @@
 // 终端身份：基于设备ID自动生成默认昵称，用户可随时修改
-// 昵称唯一化：改昵称时若目标昵称已被其他活跃用户占用，自动追加数字尾巴；
-//             用户改走旧昵称时释放旧名，使其可被他人复用。
+// 昵称唯一化：
+//   - 已发布过内容的昵称（留言/井盖）永久保留给原主；任何人（含原主换设备）再取都加数字尾巴；
+//   - 从未发布过的“空名”才允许按活跃期释放、由后来者复用。
 import { getDeviceId } from './supabase.js'
 
 const NAME_KEY = 'manhole_nickname'
@@ -33,47 +34,108 @@ export function getDisplayName() {
 }
 
 // 在全局昵称表中登记/去重（后端不可用时返回 null，由调用方降级）
-// 逻辑：
-//  1) 取近 ACTIVE_DAYS 天内、且不属于本设备的已占用昵称集合
-//  2) 目标昵称被占用 → 找最小可用数字尾巴（name2, name3 …）
-//  3) 释放本设备旧昵称（他人即可复用）
-//  4) 插入新昵称；若并发冲突则继续递增尾巴重试
+// 核心规则（防止无痕浏览器把有用的名字永久锁死，同时尊重原主资产）：
+//  1) 若目标昵称“曾经被发布过”（留言或井盖中留下过该 display_name）→ 视为原主资产，永久保留：
+//       - 当前设备正是该名字的发布者 → 原主复用原名；
+//       - 否则（他人占用、或原主换了设备无法验证）→ 一律加数字尾巴，原名绝不回收。
+//  2) 若目标昵称从未被发布过（空名）→ 按活跃期判断，可认领/释放。
 export async function claimName(deviceId, desired) {
   const clean = (desired || '').trim().slice(0, MAX_LEN)
   if (!clean) return null
   try {
     const supabase = (await import('./supabase.js')).supabase
-    const since = new Date(Date.now() - ACTIVE_DAYS * 864e5).toISOString()
-    const { data: rows } = await supabase
-      .from('display_names')
-      .select('name, device_id')
-      .gte('updated_at', since)
-    const taken = new Set()
-    for (const r of (rows || [])) {
-      if (r.device_id !== deviceId) taken.add(r.name)
-    }
-    let candidate = taken.has(clean) ? nextSuffix(clean, taken) : clean
 
-    // 释放本设备全部旧昵称
-    await supabase.from('display_names').delete().eq('device_id', deviceId)
-
-    // 登记新昵称（并发冲突则递增尾巴重试）
-    for (let i = 0; i < 30; i++) {
-      const { error } = await supabase
-        .from('display_names')
-        .insert({ name: candidate, device_id: deviceId, updated_at: new Date().toISOString() })
-      if (!error) return candidate
-      if (error && /duplicate|23505/i.test(error.message || '')) {
-        candidate = nextSuffix(clean, taken)
-        continue
+    // 规则1：已发布过的昵称永久保留给原主
+    if (await nameEverPublished(supabase, clean)) {
+      if (await isPublisher(supabase, clean, deviceId)) {
+        // 原主复用原名
+        await supabase.from('display_names').delete().eq('device_id', deviceId)
+        await insertName(supabase, clean, deviceId)
+        return clean
       }
-      throw error
+      // 非原主（或原主换设备无法验证）→ 加尾巴，保证不抢原主原名
+      return await claimWithSuffix(supabase, deviceId, clean)
     }
-    return candidate
+
+    // 规则2：空名，按活跃期判断
+    const since = new Date(Date.now() - ACTIVE_DAYS * 864e5).toISOString()
+    const { data: holders } = await supabase
+      .from('display_names')
+      .select('name, device_id, updated_at')
+      .eq('name', clean)
+      .gte('updated_at', since)
+
+    const others = (holders || []).filter(r => r.device_id !== deviceId)
+    if (others.length === 0) {
+      await supabase.from('display_names').delete().eq('device_id', deviceId)
+      await insertName(supabase, clean, deviceId)
+      return clean
+    }
+    // 被他人活跃持有 → 加尾巴
+    return await claimWithSuffix(supabase, deviceId, clean, since)
   } catch (e) {
     console.warn('[claimName] 失败，沿用本地昵称：', e)
     return null
   }
+}
+
+// 加数字尾巴认领（并发冲突则递增重试）。takenSince 为空时取全表已占名字。
+async function claimWithSuffix(supabase, deviceId, clean, takenSince) {
+  const q = supabase.from('display_names').select('name')
+  if (takenSince) q.gte('updated_at', takenSince)
+  const { data: allRows } = await q
+  const taken = new Set((allRows || []).map(r => r.name))
+  let candidate = nextSuffix(clean, taken)
+  await supabase.from('display_names').delete().eq('device_id', deviceId)
+  for (let i = 0; i < 30; i++) {
+    const { error } = await supabase
+      .from('display_names')
+      .insert({ name: candidate, device_id: deviceId, updated_at: new Date().toISOString() })
+    if (!error) return candidate
+    if (error && /duplicate|23505/i.test(error.message || '')) {
+      candidate = nextSuffix(clean, taken)
+      continue
+    }
+    throw error
+  }
+  return candidate
+}
+
+// 写入一条昵称记录
+async function insertName(supabase, name, deviceId) {
+  await supabase
+    .from('display_names')
+    .insert({ name, device_id: deviceId, updated_at: new Date().toISOString() })
+}
+
+// 该昵称是否曾被任何人以该名字发布过（留言/井盖）。一旦发布过即视为原主资产，永久保留。
+async function nameEverPublished(supabase, name) {
+  const c = await supabase
+    .from('comments')
+    .select('*', { count: 'exact', head: true })
+    .eq('display_name', name)
+  if ((c.count || 0) > 0) return true
+  const m = await supabase
+    .from('manholes')
+    .select('*', { count: 'exact', head: true })
+    .eq('display_name', name)
+  return (m.count || 0) > 0
+}
+
+// 当前设备是否曾以该昵称发布过（用于判定“原主复用”）
+async function isPublisher(supabase, name, deviceId) {
+  const c = await supabase
+    .from('comments')
+    .select('*', { count: 'exact', head: true })
+    .eq('uploader_device_id', deviceId)
+    .eq('display_name', name)
+  if ((c.count || 0) > 0) return true
+  const m = await supabase
+    .from('manholes')
+    .select('*', { count: 'exact', head: true })
+    .eq('uploader_device_id', deviceId)
+    .eq('display_name', name)
+  return (m.count || 0) > 0
 }
 
 function nextSuffix(base, taken) {

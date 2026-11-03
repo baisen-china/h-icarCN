@@ -166,13 +166,23 @@ export default {
       }
     },
     async loadVisit() {
-      const key = 'visit_counted_home'
+      const key = 'visit_counted_home_ts'
+      const WINDOW = 5 * 60 * 1000 // 同一终端 5 分钟内只计一次
       try {
-        const { data } = !uni.getStorageSync(key)
-          ? await supabase.rpc('bump_visit', { p_page: 'home' })
-          : await supabase.rpc('get_visit', { p_page: 'home' })
+        const ts = Number(uni.getStorageSync(key) || 0)
+        const now = Date.now()
+        let data
+        if (ts && now - ts < WINDOW) {
+          // 5 分钟内已计过，只读不增
+          const r = await supabase.rpc('get_visit', { p_page: 'home' })
+          data = r.data
+        } else {
+          // 超过窗口，计一次并刷新时间戳
+          const r = await supabase.rpc('bump_visit', { p_page: 'home' })
+          data = r.data
+          if (r.error == null) uni.setStorageSync(key, String(now))
+        }
         if (data != null) this.visitCount = Number(data)
-        if (!uni.getStorageSync(key)) uni.setStorageSync(key, '1')
       } catch (e) {
         // 表/RPC 未建好时静默失败，不影响主页其余功能
       }
