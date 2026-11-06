@@ -41,6 +41,12 @@
     <view class="visit">🌐 累计访问 {{ visitCount }} 次</view>
     <view class="sale">本域名待价而沽，有意者请联系QQ:24028；对，本QQ也可以卖！</view>
 
+    <!-- 底部打赏入口 -->
+    <view class="reward-bar" @click="openReward">
+      <text class="reward-bar-icon">🎁</text>
+      <text class="reward-bar-text">请作者喝杯咖啡 ☕</text>
+    </view>
+
     <!-- 右下角打赏入口（本地嵌入二维码，构建进包不可篡改） -->
     <view class="reward-fab" @click="openReward">
       <text class="reward-fab-icon">🎁</text>
@@ -50,7 +56,7 @@
     <view class="reward-mask" v-if="rewardVisible" @click="closeReward">
       <view class="reward-sheet" @click.stop>
         <text class="reward-title">请作者喝杯咖啡 ☕</text>
-        <image class="reward-qr" src="/static/reward-code.jpg" mode="aspectFit" />
+        <image class="reward-qr" :src="rewardQrCode" mode="aspectFit" />
         <text class="reward-tip">长按或截图识别二维码打赏</text>
         <view class="reward-close" @click="closeReward">关闭</view>
       </view>
@@ -63,6 +69,7 @@ import { supabase } from '@/utils/supabase.js'
 import IdentityBar from '@/components/IdentityBar/IdentityBar.vue'
 import { computeMedals } from '@/utils/medal.js'
 import { isLikedToday, markLikedToday, likeManhole, fetchLikeCounts } from '@/utils/like.js'
+import rewardQrCode from '@/utils/reward-qr.js'
 
 export default {
   components: { IdentityBar },
@@ -80,7 +87,8 @@ export default {
       currentYear: new Date().getFullYear(),
       visitCount: 0,
       likeCounts: {},
-      rewardVisible: false
+      rewardVisible: false,
+      rewardQrCode: rewardQrCode
     }
   },
   onShow() {
@@ -214,7 +222,7 @@ export default {
 </script>
 
 <style>
-.page { padding: 12px; background: #f5f5f5; min-height: 100vh; }
+.page { padding: 12px 12px 70px; background: #f5f5f5; min-height: 100vh; }
 .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .mapbtn { background: #1989fa; color: #fff; border: none; border-radius: 16px; font-size: 13px; padding: 4px 12px; margin: 0; line-height: 1.8; }
 .filter { display: flex; gap: 10px; margin-bottom: 12px; }
@@ -232,6 +240,21 @@ export default {
 .empty { text-align: center; color: #999; margin-top: 60px; }
 .visit { text-align: center; color: #999; font-size: 12px; margin-top: 16px; }
 .sale { text-align: left; color: #bbb; font-size: 11px; margin-top: 6px; padding-left: 4px; }
+
+/* 底部打赏入口 */
+.reward-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #ffb74d, #ff7043);
+  box-shadow: 0 3px 10px rgba(255, 112, 67, 0.3);
+}
+.reward-bar-icon { font-size: 20px; }
+.reward-bar-text { color: #fff; font-size: 15px; font-weight: bold; }
 
 /* 右下角打赏悬浮入口 */
 .reward-fab {
