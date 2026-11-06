@@ -51,8 +51,11 @@
     <view class="reward-mask" v-if="rewardVisible" @click="closeReward">
       <view class="reward-sheet" @click.stop>
         <text class="reward-title">请作者喝杯咖啡 ☕</text>
-        <image class="reward-qr" :src="rewardQrCode" mode="aspectFit" />
-        <text class="reward-tip">长按或截图识别二维码打赏</text>
+        <!-- 桌面：保持原样，二维码内嵌在构建包里 -->
+        <image v-if="!isMobile" class="reward-qr" :src="rewardQrCode" mode="aspectFit" />
+        <!-- 移动端：直接加载真实图片并用原生 img，微信内可长按识别直达付款页 -->
+        <view v-else class="reward-qr-mobile" v-html="qrImgHtml"></view>
+        <text class="reward-tip">{{ rewardTip }}</text>
         <view class="reward-close" @click="closeReward">关闭</view>
       </view>
     </view>
@@ -65,6 +68,18 @@ import IdentityBar from '@/components/IdentityBar/IdentityBar.vue'
 import { computeMedals } from '@/utils/medal.js'
 import { isLikedToday, markLikedToday, likeManhole, fetchLikeCounts } from '@/utils/like.js'
 import rewardQrCode from '@/utils/reward-qr.js'
+
+// 环境判定：桌面保持内嵌二维码原样；移动端改用真实图片（微信长按识别只认“真实 img + http(s) 图片地址”，
+// base64 内嵌图在很多机型上无法被识别）
+const UA = (typeof navigator !== 'undefined' && navigator.userAgent) || ''
+const IS_WEIXIN = /MicroMessenger/i.test(UA)
+const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile|HarmonyOS/i.test(UA) ||
+  (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1 && /Macintosh/i.test(UA))
+
+// 用 v-html 输出原生 <img>，避免 uni-app 模板编译器改写标签；样式内联以穿透 scoped CSS
+const QR_IMG_HTML = '<img src="/static/reward-code.jpg" alt="微信收款码" ' +
+  'style="display:block;width:220px;height:220px;max-width:100%;border:0;' +
+  '-webkit-touch-callout:default;user-select:auto;pointer-events:auto" />'
 
 export default {
   components: { IdentityBar },
@@ -83,7 +98,19 @@ export default {
       visitCount: 0,
       likeCounts: {},
       rewardVisible: false,
-      rewardQrCode: rewardQrCode
+      rewardQrCode: rewardQrCode,
+      isMobile: IS_MOBILE,
+      isWeixin: IS_WEIXIN,
+      qrImgHtml: QR_IMG_HTML
+    }
+  },
+  computed: {
+    rewardTip() {
+      // 桌面维持原文案不变
+      if (!this.isMobile) return '长按或截图识别二维码打赏'
+      return this.isWeixin
+        ? '长按二维码 → 识别图中二维码 → 即可付款'
+        : '截图保存二维码，用微信「扫一扫 → 相册」识别'
     }
   },
   onShow() {
@@ -278,6 +305,8 @@ export default {
 }
 .reward-title { font-size: 16px; font-weight: bold; color: #333; }
 .reward-qr { width: 200px; height: 200px; }
+/* 移动端原生 img 容器：不加滤镜/遮罩，保证微信能识别到二维码 */
+.reward-qr-mobile { line-height: 0; -webkit-touch-callout: default; }
 .reward-tip { font-size: 12px; color: #999; }
 .reward-close {
   margin-top: 8px;
