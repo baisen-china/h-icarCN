@@ -37,6 +37,9 @@
             "baidu" : {
                 "key" : "uUFMSAUZJInybo9NwLD3YteojJvpQJb9"
             }
+        },
+        "devServer" : {
+            "https" : false
         }
     },
     "app" : {

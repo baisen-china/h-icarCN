@@ -40,6 +40,21 @@
 
     <view class="visit">🌐 累计访问 {{ visitCount }} 次</view>
     <view class="sale">本域名待价而沽，有意者请联系QQ:24028；对，本QQ也可以卖！</view>
+
+    <!-- 右下角打赏入口（本地嵌入二维码，构建进包不可篡改） -->
+    <view class="reward-fab" @click="openReward">
+      <text class="reward-fab-icon">🎁</text>
+    </view>
+
+    <!-- 打赏弹窗 -->
+    <view class="reward-mask" v-if="rewardVisible" @click="closeReward">
+      <view class="reward-sheet" @click.stop>
+        <text class="reward-title">请作者喝杯咖啡 ☕</text>
+        <image class="reward-qr" src="/static/reward-code.jpg" mode="aspectFit" />
+        <text class="reward-tip">长按或截图识别二维码打赏</text>
+        <view class="reward-close" @click="closeReward">关闭</view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -64,7 +79,8 @@ export default {
       sortLabel: '最老优先',
       currentYear: new Date().getFullYear(),
       visitCount: 0,
-      likeCounts: {}
+      likeCounts: {},
+      rewardVisible: false
     }
   },
   onShow() {
@@ -149,6 +165,12 @@ export default {
     onImgError(item) {
       item.image_url = ''
     },
+    openReward() {
+      this.rewardVisible = true
+    },
+    closeReward() {
+      this.rewardVisible = false
+    },
     likedToday(id) {
       return isLikedToday(id)
     },
@@ -210,4 +232,57 @@ export default {
 .empty { text-align: center; color: #999; margin-top: 60px; }
 .visit { text-align: center; color: #999; font-size: 12px; margin-top: 16px; }
 .sale { text-align: left; color: #bbb; font-size: 11px; margin-top: 6px; padding-left: 4px; }
+
+/* 右下角打赏悬浮入口 */
+.reward-fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffb74d, #ff7043);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(255, 112, 67, 0.4);
+  z-index: 100;
+}
+.reward-fab-icon { font-size: 24px; }
+
+/* 打赏弹窗 */
+.reward-mask {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+.reward-sheet {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  width: 78%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.reward-title { font-size: 16px; font-weight: bold; color: #333; }
+.reward-qr { width: 200px; height: 200px; }
+.reward-tip { font-size: 12px; color: #999; }
+.reward-close {
+  margin-top: 8px;
+  background: #1989fa;
+  color: #fff;
+  font-size: 14px;
+  border-radius: 16px;
+  padding: 8px 28px;
+}
 </style>
