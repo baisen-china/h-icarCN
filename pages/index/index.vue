@@ -39,17 +39,12 @@
     <view class="empty" v-else>暂无数据，去上传第一个井盖吧～</view>
 
     <view class="visit">🌐 累计访问 {{ visitCount }} 次</view>
-    <view class="sale">本域名待价而沽，有意者请联系QQ:24028；对，本QQ也可以卖！</view>
-
-    <!-- 底部打赏入口 -->
-    <view class="reward-bar" @click="openReward">
-      <text class="reward-bar-icon">🎁</text>
-      <text class="reward-bar-text">请作者喝杯咖啡 ☕</text>
-    </view>
-
-    <!-- 右下角打赏入口（本地嵌入二维码，构建进包不可篡改） -->
-    <view class="reward-fab" @click="openReward">
-      <text class="reward-fab-icon">🎁</text>
+    <view class="sale-row">
+      <text class="sale">本域名待价而沽，有意者请联系QQ:24028；对，本QQ也可以卖！</text>
+      <view class="reward-mini" @click="openReward">
+        <text class="reward-mini-icon">☕</text>
+        <text class="reward-mini-text">打赏</text>
+      </view>
     </view>
 
     <!-- 打赏弹窗 -->
@@ -239,39 +234,23 @@ export default {
 .like-mini .on { color: #ff6b00; }
 .empty { text-align: center; color: #999; margin-top: 60px; }
 .visit { text-align: center; color: #999; font-size: 12px; margin-top: 16px; }
-.sale { text-align: left; color: #bbb; font-size: 11px; margin-top: 6px; padding-left: 4px; }
+.sale-row { display: flex; align-items: center; margin-top: 6px; padding-left: 4px; }
+.sale { flex: 1; color: #bbb; font-size: 11px; }
 
-/* 底部打赏入口 */
-.reward-bar {
+/* 打赏入口（与域名文案并排，靠右，低调样式） */
+.reward-mini {
+  flex-shrink: 0;
+  margin-left: 10px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 14px;
-  padding: 12px 16px;
-  border-radius: 24px;
-  background: linear-gradient(135deg, #ffb74d, #ff7043);
-  box-shadow: 0 3px 10px rgba(255, 112, 67, 0.3);
+  gap: 3px;
+  padding: 3px 9px;
+  border-radius: 11px;
+  border: 1px solid #ffc59b;
+  background: #fff7f0;
 }
-.reward-bar-icon { font-size: 20px; }
-.reward-bar-text { color: #fff; font-size: 15px; font-weight: bold; }
-
-/* 右下角打赏悬浮入口 */
-.reward-fab {
-  position: fixed;
-  right: 16px;
-  bottom: calc(16px + env(safe-area-inset-bottom));
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #ffb74d, #ff7043);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(255, 112, 67, 0.4);
-  z-index: 100;
-}
-.reward-fab-icon { font-size: 24px; }
+.reward-mini-icon { font-size: 13px; }
+.reward-mini-text { color: #ff8a3d; font-size: 12px; }
 
 /* 打赏弹窗 */
 .reward-mask {
