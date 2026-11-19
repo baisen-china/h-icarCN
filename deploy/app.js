@@ -63918,11 +63918,11 @@
   controls.minDistance = 125;
   controls.maxDistance = 720;
   controls.autoRotateSpeed = 0.45;
-  scene.add(new AmbientLight(16777215, 2.1));
-  var sun = new DirectionalLight(16777215, 2.4);
+  scene.add(new AmbientLight(16777215, 3.0));
+  var sun = new DirectionalLight(16777215, 2.2);
   sun.position.set(320, 220, 420);
   scene.add(sun);
-  var rim = new DirectionalLight(12574975, 0.9);
+  var rim = new DirectionalLight(12574975, 1.3);
   rim.position.set(-360, -120, -280);
   scene.add(rim);
   (function addStars() {
