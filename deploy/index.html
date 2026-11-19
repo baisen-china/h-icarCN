@@ -114,6 +114,25 @@
   .panel::-webkit-scrollbar, #detail-scroll::-webkit-scrollbar { width: 6px; }
   .panel::-webkit-scrollbar-thumb, #detail-scroll::-webkit-scrollbar-thumb { background: #cbd9e8; border-radius: 3px; }
 
+  /* ---------- collapsible panels ---------- */
+  :root { --detail-w: 386px; --control-w: 254px; }
+  #detail-card, #control-card { transition: transform .32s ease; }
+  body.detail-collapsed #detail-card { transform: translateX(calc(-100% - 32px)); }
+  body.control-collapsed #control-card { transform: translateX(calc(100% + 32px)); }
+  .panel-toggle {
+    position: fixed; z-index: 14; top: 92px; width: 22px; height: 48px;
+    display: flex; align-items: center; justify-content: center; padding: 0;
+    border: 1px solid rgba(255,255,255,.92); background: var(--panel);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    box-shadow: var(--shadow); color: #334e6e; font-size: 12px; cursor: pointer;
+    transition: left .32s ease, right .32s ease;
+  }
+  #detail-toggle { left: 0; border-left: 0; border-radius: 0 10px 10px 0; }
+  #control-toggle { right: 0; border-right: 0; border-radius: 10px 0 0 10px; }
+  body:not(.detail-collapsed) #detail-toggle { left: calc(20px + var(--detail-w)); }
+  body:not(.control-collapsed) #control-toggle { right: calc(20px + var(--control-w)); }
+  .panel-toggle:hover { color: var(--accent); }
+
   /* ---------- empty state ---------- */
   #empty-state h2 { margin: 4px 0 4px; font-size: 18px; color: #143a63; }
   #empty-state .lede { margin: 0 0 18px; font-size: 12px; line-height: 1.7; color: var(--muted); }
@@ -225,15 +244,30 @@
   #loading p { margin: 0; font-size: 11.5px; color: #8496ab; }
 
   @media (max-width: 1180px) {
+    :root { --detail-w: 330px; --control-w: 226px; }
     #detail-card { width: 330px; }
     #control-card { width: 226px; }
     .brand { min-width: 230px; }
   }
   @media (max-width: 860px) {
-    .brand p, #control-card, #hint-bar { display: none; }
+    :root { --detail-w: 300px; --control-w: 240px; }
+    .brand p, #hint-bar { display: none; }
     #detail-card { width: 300px; top: 82px; bottom: 16px; }
+    #control-card { top: 82px; max-height: calc(100vh - 130px); }
+    .panel-toggle { top: 86px; height: 42px; width: 20px; font-size: 11px; }
     #topbar { height: 64px; padding: 0 12px; gap: 8px; }
     #search-wrap { flex: 1; }
+    .top-actions button { padding: 0 9px; }
+  }
+  /* 窄屏：压缩顶部工具栏，避免按钮溢出屏幕 */
+  @media (max-width: 560px) {
+    .brand { min-width: 0; }
+    .brand h1 { display: none; }
+    .top-actions { gap: 5px; flex: none; }
+    .top-actions button { padding: 0 7px; font-size: 13px; }
+    .top-actions button span { display: none; }
+    #btn-graticule, #btn-reset { font-size: 10px; padding: 0 6px; }
+    #search-input { padding-left: 30px; font-size: 12px; background-position: 9px center; }
   }
 </style>
 </head>
@@ -319,6 +353,37 @@
     <div id="hot-countries"></div>
   </div>
 </aside>
+
+<button id="detail-toggle" class="panel-toggle" title="收起/展开详情栏" aria-label="收起或展开详情栏">◀</button>
+<button id="control-toggle" class="panel-toggle" title="收起/展开控制栏" aria-label="收起或展开控制栏">▶</button>
+
+<script>
+(function () {
+  var b = document.body;
+  var card = document.getElementById('detail-card');
+  var dt = document.getElementById('detail-toggle');
+  var ct = document.getElementById('control-toggle');
+  function sync() {
+    dt.textContent = b.classList.contains('detail-collapsed') ? '▶' : '◀';
+    ct.textContent = b.classList.contains('control-collapsed') ? '◀' : '▶';
+  }
+  dt.addEventListener('click', function () { b.classList.toggle('detail-collapsed'); sync(); });
+  ct.addEventListener('click', function () { b.classList.toggle('control-collapsed'); sync(); });
+  // 点击国家/搜索定位时，详情栏若处于收起状态则自动展开
+  if (window.MutationObserver) {
+    new MutationObserver(function () {
+      if (card.classList.contains('open') && b.classList.contains('detail-collapsed')) {
+        b.classList.remove('detail-collapsed'); sync();
+      }
+    }).observe(card, { attributes: true, attributeFilter: ['class'] });
+  }
+  // 移动端默认收起左右面板，先看地球主体
+  if (window.matchMedia('(max-width: 860px)').matches) {
+    b.classList.add('detail-collapsed', 'control-collapsed');
+  }
+  sync();
+})();
+</script>
 
 <div id="tooltip"></div>
 <div id="hint-bar">
