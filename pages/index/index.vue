@@ -39,6 +39,18 @@
     <view class="empty" v-else>暂无数据，去上传第一个井盖吧～</view>
 
     <view class="visit">🌐 累计访问 {{ visitCount }} 次</view>
+
+    <!-- #ifdef H5 -->
+    <view class="friend-link" @click="goEarth">
+      <text class="friend-icon">🌍</text>
+      <view class="friend-info">
+        <text class="friend-title">3D 世界地球仪 · 人文历史地理</text>
+        <text class="friend-sub">友情链接 · 旋转地球，探索各国首都与故事</text>
+      </view>
+      <text class="friend-arrow">›</text>
+    </view>
+    <!-- #endif -->
+
     <view class="sale-row">
       <text class="sale">本域名待价而沽，有意者请联系QQ:24028；对，本QQ也可以卖！</text>
       <view class="reward-mini" @click="openReward">
@@ -189,6 +201,11 @@ export default {
     goMap() {
       uni.navigateTo({ url: '/pages/map/map' })
     },
+    // #ifdef H5
+    goEarth() {
+      window.open('/earth/', '_blank')
+    },
+    // #endif
     goUpload() {
       uni.switchTab({ url: '/pages/upload/upload' })
     },
@@ -261,6 +278,24 @@ export default {
 .like-mini .on { color: #ff6b00; }
 .empty { text-align: center; color: #999; margin-top: 60px; }
 .visit { text-align: center; color: #999; font-size: 12px; margin-top: 16px; }
+
+/* 友情链接入口（仅 H5 显示） */
+.friend-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.friend-icon { font-size: 22px; }
+.friend-info { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.friend-title { font-size: 13px; font-weight: bold; color: #333; }
+.friend-sub { font-size: 11px; color: #999; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.friend-arrow { font-size: 20px; color: #ccc; line-height: 1; }
+
 .sale-row { display: flex; align-items: center; margin-top: 6px; padding-left: 4px; }
 .sale { flex: 1; color: #bbb; font-size: 11px; }
 

@@ -8,6 +8,8 @@ REM      同时把审核后台 admin-web\ 复制到 docs\admin\（上线后为 h
 REM   3) git add docs 并提交推送，GitHub Pages（源：main 分支 /docs）即生效
 
 set "SRC=unpackage\dist\build\web\client"
+REM 兼容两种发行结构：SSR 发行取 client 子目录，普通发行直接在 web\ 下
+if not exist "%SRC%" set "SRC=unpackage\dist\build\web"
 set "ADMIN_SRC=admin-web"
 set "DST=docs"
 
@@ -30,6 +32,11 @@ xcopy /E /Y /I "%SRC%\*" "%DST%" >nul
 echo 正在复制审核后台 %ADMIN_SRC% → %DST%\admin ...
 if not exist "%DST%\admin" mkdir "%DST%\admin"
 xcopy /E /Y /I "%ADMIN_SRC%\*" "%DST%\admin" >nul
+
+echo 正在复制 3D 地球页面 deploy → %DST%\earth ...
+if exist "%DST%\earth" rmdir /S /Q "%DST%\earth"
+if not exist "%DST%\earth" mkdir "%DST%\earth"
+xcopy /E /Y /I "deploy\*" "%DST%\earth" >nul
 
 echo h-icar.cn> "%DST%\CNAME"
 echo. > "%DST%\.nojekyll"

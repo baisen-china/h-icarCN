@@ -6,6 +6,10 @@
 set -e
 
 SRC="unpackage/dist/build/web/client"
+# 兼容两种发行结构：SSR 发行取 client 子目录，普通发行直接在 web/ 下
+if [ ! -d "$SRC" ]; then
+  SRC="unpackage/dist/build/web"
+fi
 ADMIN_SRC="admin-web"
 DST="docs"
 
@@ -17,8 +21,8 @@ fi
 
 mkdir -p "$DST"
 
-# 清理旧的 H5 资源（保留 admin、CNAME、.nojekyll），避免残留过期哈希文件
-find "$DST" -mindepth 1 -maxdepth 1 ! -name 'admin' ! -name 'CNAME' ! -name '.nojekyll' -exec rm -rf {} + 2>/dev/null || true
+# 清理旧的 H5 资源（保留 admin、earth、CNAME、.nojekyll），避免残留过期哈希文件
+find "$DST" -mindepth 1 -maxdepth 1 ! -name 'admin' ! -name 'earth' ! -name 'CNAME' ! -name '.nojekyll' -exec rm -rf {} + 2>/dev/null || true
 
 echo "正在复制 $SRC → $DST ..."
 cp -r "$SRC"/. "$DST"/
@@ -27,6 +31,11 @@ echo "正在复制审核后台 $ADMIN_SRC → $DST/admin ..."
 mkdir -p "$DST/admin"
 rm -rf "$DST/admin"/*
 cp -r "$ADMIN_SRC"/. "$DST/admin"/
+
+echo "正在复制 3D 地球页面 deploy → $DST/earth ..."
+mkdir -p "$DST/earth"
+rm -rf "$DST/earth"/*
+cp -r deploy/. "$DST/earth"/
 
 printf 'h-icar.cn' > "$DST/CNAME"
 touch "$DST/.nojekyll"

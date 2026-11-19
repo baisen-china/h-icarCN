@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D 世界地球仪 · 人文历史地理</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%8D%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --ink: #1e293b;
+    --muted: #64748b;
+    --line: #dbe6f2;
+    --accent: #2563eb;
+    --panel: rgba(255,255,255,0.90);
+    --shadow: 0 18px 46px rgba(30,64,175,0.10), 0 2px 8px rgba(30,64,175,0.05);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    overflow: hidden;
+    font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", system-ui, -apple-system, sans-serif;
+    color: var(--ink);
+    background: linear-gradient(155deg, #dbeafe 0%, #edf5fd 38%, #f8fbff 72%, #e8f3fb 100%);
+  }
+  button, input { font-family: inherit; }
+  button { cursor: pointer; }
+
+  #globe-stage { position: fixed; inset: 0; z-index: 1; }
+  #globe-stage canvas { display: block; cursor: grab; }
+  #globe-stage canvas:active { cursor: grabbing; }
+
+  #label-layer { position: fixed; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
+  .globe-label {
+    position: absolute; display: flex; align-items: center; gap: 5px;
+    white-space: nowrap; will-change: transform, opacity;
+  }
+  .label-continent span {
+    font-size: 17px; font-weight: 800; letter-spacing: 3px; color: #17365d;
+    text-shadow: 0 0 4px #fff, 0 0 10px #fff, 0 0 16px #fff, 0 2px 3px rgba(255,255,255,.9);
+  }
+  .label-ocean span {
+    font-size: 15px; font-style: italic; font-weight: 600; letter-spacing: 2px; color: #2563eb;
+    text-shadow: 0 0 4px #fff, 0 0 10px #fff, 0 0 16px #fff;
+  }
+  .label-capital span {
+    font-size: 11px; font-weight: 600; color: #78350f;
+    text-shadow: 0 0 3px #fff, 0 0 7px #fff, 0 0 10px #fff;
+  }
+  .label-capital i {
+    width: 5px; height: 5px; border-radius: 50%; background: #d97706;
+    box-shadow: 0 0 0 2px rgba(255,255,255,.85), 0 0 6px rgba(217,119,6,.5);
+  }
+
+  /* ---------- top bar ---------- */
+  #topbar {
+    position: fixed; z-index: 20; top: 0; left: 0; right: 0; height: 72px;
+    display: flex; align-items: center; gap: 18px; padding: 0 22px;
+    background: rgba(255,255,255,0.76);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255,255,255,0.9);
+    box-shadow: 0 6px 24px rgba(30,64,175,0.05);
+  }
+  .brand { display: flex; align-items: center; gap: 11px; min-width: 300px; }
+  .brand .logo {
+    width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center;
+    font-size: 22px; background: linear-gradient(135deg,#dbeafe,#eff6ff);
+    box-shadow: inset 0 0 0 1px #cfe0f5;
+  }
+  .brand h1 { margin: 0; font-size: 18px; letter-spacing: .5px; color: #143a63; }
+  .brand p { margin: 2px 0 0; font-size: 11px; color: var(--muted); letter-spacing: .3px; }
+
+  #search-wrap { position: relative; flex: 0 1 360px; margin-left: auto; }
+  #search-input {
+    width: 100%; height: 38px; padding: 0 14px 0 36px; font-size: 13px;
+    border: 1px solid #d3e2f2; border-radius: 10px; outline: none;
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-4-4'/%3E%3C/svg%3E") no-repeat 12px center;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  #search-input:focus { border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(37,99,235,.09); }
+  #search-results {
+    display: none; position: absolute; top: 44px; left: 0; right: 0; z-index: 30;
+    max-height: 340px; overflow-y: auto; padding: 6px;
+    background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow);
+  }
+  #search-results.show { display: block; }
+  .search-item {
+    width: 100%; display: grid; grid-template-columns: 26px 1fr auto; align-items: center; gap: 8px;
+    padding: 8px 10px; border: 0; border-radius: 8px; background: transparent; text-align: left;
+  }
+  .search-item:hover { background: #eff6ff; }
+  .si-flag { font-size: 18px; }
+  .si-name { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .si-meta { font-size: 11px; color: var(--muted); }
+
+  .top-actions { display: flex; gap: 8px; }
+  .top-actions button {
+    height: 36px; padding: 0 13px; font-size: 12px; font-weight: 600;
+    color: #334e6e; background: #fff; border: 1px solid #d3e2f2; border-radius: 9px;
+    transition: all .18s;
+  }
+  .top-actions button:hover, .top-actions button.active {
+    color: var(--accent); border-color: #93c5fd; background: #eff6ff;
+  }
+
+  /* ---------- panels ---------- */
+  .panel {
+    position: fixed; z-index: 12; background: var(--panel);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,.92); border-radius: 16px; box-shadow: var(--shadow);
+  }
+  #detail-card { left: 20px; top: 88px; bottom: 68px; width: 386px; overflow: hidden; }
+  #detail-scroll { height: 100%; overflow-y: auto; padding: 20px 20px 24px; }
+  #control-card { right: 20px; top: 88px; width: 254px; max-height: calc(100vh - 156px); overflow-y: auto; padding: 17px 17px 19px; }
+  .panel::-webkit-scrollbar, #detail-scroll::-webkit-scrollbar { width: 6px; }
+  .panel::-webkit-scrollbar-thumb, #detail-scroll::-webkit-scrollbar-thumb { background: #cbd9e8; border-radius: 3px; }
+
+  /* ---------- empty state ---------- */
+  #empty-state h2 { margin: 4px 0 4px; font-size: 18px; color: #143a63; }
+  #empty-state .lede { margin: 0 0 18px; font-size: 12px; line-height: 1.7; color: var(--muted); }
+  .guide { display: grid; gap: 10px; }
+  .guide-item { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; background: rgba(239,246,255,.75); }
+  .guide-item b { flex: 0 0 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; font-size: 11px; color: #fff; background: linear-gradient(135deg,#60a5fa,#2563eb); }
+  .guide-item div { font-size: 12px; line-height: 1.6; }
+  .guide-item strong { display: block; font-size: 12.5px; color: #1e3a5f; }
+  .guide-item span { color: var(--muted); }
+  .empty-note { margin-top: 16px; padding: 11px 13px; border-left: 3px solid #93c5fd; background: rgba(219,234,254,.5); font-size: 11.5px; line-height: 1.7; color: #475569; border-radius: 0 8px 8px 0; }
+
+  /* ---------- detail ---------- */
+  #detail-content { display: none; position: relative; }
+  #detail-card.open #detail-content { display: block; animation: fadeUp .28s ease; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .detail-head { display: flex; gap: 13px; align-items: center; padding-right: 26px; }
+  .detail-head .flag { font-size: 34px; line-height: 1; filter: drop-shadow(0 2px 3px rgba(0,0,0,.08)); }
+  .detail-title h2 { margin: 0; font-size: 22px; color: #143a63; letter-spacing: .5px; }
+  .detail-title p { margin: 3px 0 0; font-size: 11.5px; color: var(--muted); }
+  .detail-title .dot { padding: 0 4px; color: #94a3b8; }
+  .close-detail {
+    position: absolute; right: 0; top: 0; width: 26px; height: 26px; border: 0; border-radius: 8px;
+    background: #eef4fa; color: #64748b; font-size: 17px; line-height: 1;
+  }
+  .close-detail:hover { background: #dbeafe; color: var(--accent); }
+  .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0; }
+  .tag-row span { padding: 4px 9px; font-size: 11px; color: #1d4ed8; background: #eaf2ff; border: 1px solid #d8e7fd; border-radius: 999px; }
+  .fact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .fact { padding: 9px 11px; background: rgba(248,251,255,.9); border: 1px solid #e6eef7; border-radius: 9px; min-width: 0; }
+  .fact em { display: block; font-style: normal; font-size: 10.5px; color: #8496ab; margin-bottom: 3px; }
+  .fact strong { display: block; font-size: 12.5px; color: #263c56; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tabs { display: flex; gap: 4px; padding: 4px; background: #eef4fa; border-radius: 10px; margin-bottom: 14px; }
+  .tabs button { flex: 1; height: 31px; border: 0; border-radius: 7px; background: transparent; color: #5a708a; font-size: 12.5px; font-weight: 600; }
+  .tabs button.active { background: #fff; color: var(--accent); box-shadow: 0 1px 5px rgba(30,64,175,.10); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; animation: fadeUp .2s ease; }
+  .tab-panel h3 { margin: 0 0 8px; font-size: 13px; color: #1e3a5f; padding-left: 9px; border-left: 3px solid #60a5fa; }
+  .tab-panel p { margin: 0; font-size: 12.5px; line-height: 1.95; color: #4a5c70; text-align: justify; }
+  .no-story { padding: 16px 4px; font-size: 12px; line-height: 1.8; color: var(--muted); }
+  .no-story .note { color: #1d4ed8; font-weight: 600; }
+  .no-story .hint { font-size: 11.5px; color: #94a3b8; }
+
+  /* ---------- controls ---------- */
+  .sec { margin-bottom: 17px; }
+  .sec:last-child { margin-bottom: 0; }
+  .sec-title { display: flex; align-items: center; gap: 7px; margin-bottom: 10px; font-size: 12px; font-weight: 700; color: #1e3a5f; }
+  .sec-title::before { content: ''; width: 3px; height: 13px; border-radius: 2px; background: linear-gradient(#60a5fa,#2563eb); }
+  .sec small { font-weight: 400; color: #94a3b8; font-size: 10px; }
+  .check-list { display: grid; gap: 7px; }
+  .check { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #4a5c70; cursor: pointer; }
+  .check input { appearance: none; width: 15px; height: 15px; border: 1.5px solid #b9cbe0; border-radius: 4px; background: #fff; flex: none; position: relative; cursor: pointer; }
+  .check input:checked { background: #2563eb; border-color: #2563eb; }
+  .check input:checked::after { content: '✓'; position: absolute; left: 2px; top: -2px; font-size: 12px; color: #fff; font-weight: 700; }
+  .continent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .continent-item {
+    display: flex; align-items: center; gap: 6px; padding: 6px 8px; font-size: 11.5px;
+    background: #f8fbff; border: 1px solid #e3ecf6; border-radius: 8px; color: #475569;
+  }
+  .continent-item i { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  .continent-item:hover { border-color: #bfdbfe; }
+  .continent-item.active { background: #eff6ff; border-color: #60a5fa; color: #1d4ed8; font-weight: 700; }
+  #legend-caption { margin-top: 8px; font-size: 10px; line-height: 1.5; color: #94a3b8; }
+  .ocean-list { display: grid; gap: 6px; }
+  .ocean-item { display: flex; align-items: center; gap: 7px; padding: 5px 8px; border-radius: 7px; background: rgba(239,246,255,.6); }
+  .ocean-item i { width: 7px; height: 7px; border-radius: 50%; background: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.13); flex: none; }
+  .ocean-item span { font-size: 11.5px; color: #334e6e; font-weight: 600; }
+  .ocean-item small { margin-left: auto; font-size: 9.5px; color: #9aadc2; }
+  .tz-control { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .tz-control label { font-size: 11px; color: #5a718a; }
+  .tz-control select { flex: 1; min-width: 0; padding: 5px 7px; font-size: 11px; color: #1e3a5f; background: #f8fbff; border: 1px solid #d7e4f2; border-radius: 7px; outline: none; cursor: pointer; }
+  .tz-control select:focus { border-color: #60a5fa; }
+  .tz-clock { display: flex; align-items: center; justify-content: space-between; margin-top: 9px; padding: 7px 9px; font-size: 11px; color: #5a718a; background: linear-gradient(135deg,#eff6ff,#f8fbff); border: 1px solid #dbe9f8; border-radius: 8px; }
+  .tz-clock b { font-size: 13px; color: #1d4ed8; font-variant-numeric: tabular-nums; letter-spacing: .5px; }
+  .tz-hint { margin-top: 7px; font-size: 9.5px; line-height: 1.5; color: #94a3b8; }
+  #btn-lang, #btn-speech { white-space: nowrap; }
+  #btn-speech.speaking { background: #2563eb; color: #fff; border-color: #2563eb; }
+  #hot-countries { display: flex; flex-wrap: wrap; gap: 5px; }
+  .hot-item { padding: 4px 8px; font-size: 10.5px; color: #475569; background: #f8fbff; border: 1px solid #e3ecf6; border-radius: 7px; }
+  .hot-item:hover { color: var(--accent); border-color: #93c5fd; background: #eff6ff; }
+  .divider { height: 1px; background: #e6eef7; margin: 15px 0; }
+
+  /* ---------- misc ---------- */
+  #tooltip {
+    display: none; position: fixed; z-index: 40; pointer-events: none;
+    padding: 8px 12px; background: rgba(255,255,255,.96); border: 1px solid #d8e6f5;
+    border-radius: 9px; box-shadow: 0 8px 24px rgba(30,64,175,.12);
+  }
+  #tooltip b { display: block; font-size: 12.5px; color: #143a63; }
+  #tooltip span { display: block; margin-top: 2px; font-size: 10.5px; color: #7c8fa5; }
+  #hint-bar {
+    position: fixed; z-index: 11; bottom: 18px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 16px; align-items: center; padding: 8px 18px;
+    font-size: 11px; color: #5a718a; white-space: nowrap;
+    background: rgba(255,255,255,.78); border: 1px solid rgba(255,255,255,.9);
+    border-radius: 999px; box-shadow: 0 6px 20px rgba(30,64,175,.06);
+    backdrop-filter: blur(10px);
+  }
+  #hint-bar kbd { display: inline-block; padding: 1px 6px; margin-right: 4px; font-size: 10px; font-family: inherit; color: #2563eb; background: #eaf2ff; border-radius: 5px; }
+  #loading {
+    position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 10px;
+    background: linear-gradient(155deg,#eaf3fd,#f8fbff);
+    transition: opacity .5s, visibility .5s;
+  }
+  #loading.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+  .loader-ring { width: 46px; height: 46px; border-radius: 50%; border: 3px solid #d6e6f8; border-top-color: #2563eb; animation: spin .9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loading h3 { margin: 6px 0 0; font-size: 15px; color: #1e3a5f; }
+  #loading p { margin: 0; font-size: 11.5px; color: #8496ab; }
+
+  @media (max-width: 1180px) {
+    #detail-card { width: 330px; }
+    #control-card { width: 226px; }
+    .brand { min-width: 230px; }
+  }
+  @media (max-width: 860px) {
+    .brand p, #control-card, #hint-bar { display: none; }
+    #detail-card { width: 300px; top: 82px; bottom: 16px; }
+    #topbar { height: 64px; padding: 0 12px; gap: 8px; }
+    #search-wrap { flex: 1; }
+  }
+</style>
+</head>
+<body>
+
+<div id="globe-stage"></div>
+<div id="label-layer"></div>
+
+<header id="topbar">
+  <div class="brand">
+    <div class="logo">🌍</div>
+    <div>
+      <h1 data-i18n="brandTitle">3D 世界地球仪</h1>
+      <p data-i18n="brandSub">七大洲 · 四大洋 · 国界 · 首都 · 人文历史地理</p>
+    </div>
+  </div>
+  <div id="search-wrap">
+    <input id="search-input" type="text" autocomplete="off" data-i18n-ph="searchPh" placeholder="搜索国家 / 首都，例如：中国、东京、Egypt">
+    <div id="search-results"></div>
+  </div>
+  <div class="top-actions">
+    <button id="btn-lang" title="Switch language">🌐 <span data-i18n="langLabel">EN</span></button>
+    <button id="btn-speech" title="语音播报">🔊 <span data-i18n="speechOn">语音播报</span></button>
+    <button id="btn-graticule" data-i18n="btnGraticule" title="显示或隐藏经纬网">经纬网</button>
+    <button id="btn-reset" data-i18n="btnReset" title="回到初始视角">复位视角</button>
+  </div>
+</header>
+
+<aside id="detail-card" class="panel">
+  <div id="detail-scroll">
+    <div id="empty-state">
+      <h2 data-i18n="emptyTitle">探索这个世界</h2>
+      <p class="lede" data-i18n="emptyLede">一个可交互的三维地球仪，涵盖 176 个国家与地区边界、174 座首都，以及 42 个主要国家的人文历史地理介绍。</p>
+      <div class="guide">
+        <div class="guide-item"><b>1</b><div><strong data-i18n="guide1t">旋转与缩放</strong><span data-i18n="guide1d">拖动鼠标旋转地球，滚轮或双指缩放查看局部细节。</span></div></div>
+        <div class="guide-item"><b>2</b><div><strong data-i18n="guide2t">点击国家 / 首都</strong><span data-i18n="guide2d">点击彩色国家或金色首都点，左侧会显示详细介绍并自动定位。</span></div></div>
+        <div class="guide-item"><b>3</b><div><strong data-i18n="guide3t">按大洲筛选</strong><span data-i18n="guide3d">点击右侧图例中的大洲，可高亮该洲并淡化其他区域。</span></div></div>
+        <div class="guide-item"><b>4</b><div><strong data-i18n="guide4t">搜索定位</strong><span data-i18n="guide4d">顶部搜索框支持中文名、英文名与首都名，如“法国”“Tokyo”。</span></div></div>
+      </div>
+      <div class="empty-note" data-i18n="emptyNote">国界依据 Natural Earth 1:110m 数据绘制；大洲以颜色区分，四大洋以蓝色斜体标注。点击空白处或按 Esc 可关闭详情。</div>
+    </div>
+    <div id="detail-content"></div>
+  </div>
+</aside>
+
+<aside id="control-card" class="panel">
+  <div class="sec">
+    <div class="sec-title"><span data-i18n="layers">图层显示</span> <small>LAYERS</small></div>
+    <div class="check-list">
+      <label class="check"><input type="checkbox" id="layer-borders"><span data-i18n="layerBorders">国家边界与着色</span></label>
+      <label class="check"><input type="checkbox" id="layer-capitals"><span data-i18n="layerCapitals">首都标记点</span></label>
+      <label class="check"><input type="checkbox" id="layer-capital-names"><span data-i18n="layerCapitalNames">主要国家首都名</span></label>
+      <label class="check"><input type="checkbox" id="layer-continents"><span data-i18n="layerContinents">七大洲名称</span></label>
+      <label class="check"><input type="checkbox" id="layer-oceans"><span data-i18n="layerOceans">四大洋名称</span></label>
+      <label class="check"><input type="checkbox" id="layer-timezones"><span data-i18n="layerTimezones">时区分界线</span></label>
+      <label class="check"><input type="checkbox" id="layer-rotate"><span data-i18n="layerRotate">自动旋转</span></label>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div class="sec">
+    <div class="sec-title"><span data-i18n="continents">七大洲</span> <small>CONTINENTS</small></div>
+    <div class="continent-grid" id="continent-legend"></div>
+    <div id="legend-caption" data-i18n="legendCaption">按大洲给国家着色，点击可筛选</div>
+  </div>
+  <div class="divider"></div>
+  <div class="sec">
+    <div class="sec-title"><span data-i18n="oceans">四大洋</span> <small>OCEANS</small></div>
+    <div class="ocean-list" id="ocean-list"></div>
+  </div>
+  <div class="divider"></div>
+  <div class="sec">
+    <div class="sec-title"><span data-i18n="tzTitle">时区选线</span> <small>TIMEZONES</small></div>
+    <div class="tz-control">
+      <label data-i18n="tzSelect">选择时区</label>
+      <select id="tz-select"></select>
+    </div>
+    <div id="tz-clock" class="tz-clock"><span data-i18n="tzNow">当地时间</span> <b>--:--:--</b></div>
+    <div class="tz-hint" data-i18n="tzHint">开启后显示 24 条时区界线；选择时区可高亮并查看当地时间。</div>
+  </div>
+  <div class="divider"></div>
+  <div class="sec">
+    <div class="sec-title"><span data-i18n="quick">快速前往</span> <small>QUICK LINKS</small></div>
+    <div id="hot-countries"></div>
+  </div>
+</aside>
+
+<div id="tooltip"></div>
+<div id="hint-bar">
+  <span><kbd data-i18n="hintDrag">拖动</kbd><span data-i18n="hintRotate">旋转</span></span>
+  <span><kbd data-i18n="hintZoom">滚轮</kbd><span data-i18n="hintScale">缩放</span></span>
+  <span><kbd data-i18n="hintClick">点击</kbd><span data-i18n="hintView">查看国家</span></span>
+  <span><kbd data-i18n="hintEsc">Esc</kbd><span data-i18n="hintClose">关闭详情</span></span>
+</div>
+
+<div id="loading">
+  <div class="loader-ring"></div>
+  <h3 data-i18n="loadingTitle">正在绘制地球…</h3>
+  <p data-i18n="loadingSub">加载地形纹理与国家边界数据</p>
+</div>
+
+<script src="./data/world-topo.js"></script>
+<script src="./data/country-info.js"></script>
+<script src="./data/capitals.js"></script>
+<script src="./data/continent-colors.js"></script>
+<script src="./data/country-stories.js"></script>
+<script src="./data/country-stories-en.js"></script>
+<script src="./data/i18n.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>
